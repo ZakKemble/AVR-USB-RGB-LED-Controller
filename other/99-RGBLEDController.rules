@@ -1,0 +1,5 @@
+# RGB LED Controller
+
+# For older systems ATTR should be SYSFS
+
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="16c0", ATTR{idProduct}=="05dc", MODE="0666"

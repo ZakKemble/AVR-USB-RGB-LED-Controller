@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>6.0</ProjectVersion>
+    <ToolchainName>com.Atmel.AVRGCC8</ToolchainName>
+    <ProjectGuid>{5f29f760-89f8-4398-bc3e-2d6f909af335}</ProjectGuid>
+    <avrdevice>ATtiny85</avrdevice>
+    <avrdeviceseries>none</avrdeviceseries>
+    <OutputType>Executable</OutputType>
+    <Language>C</Language>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <AssemblyName>usbLedController</AssemblyName>
+    <Name>usbLedController</Name>
+    <RootNamespace>usbLedController</RootNamespace>
+    <ToolchainFlavour>AVR-GCC 4.7.2</ToolchainFlavour>
+    <KeepTimersRunning>true</KeepTimersRunning>
+    <OverrideVtor>false</OverrideVtor>
+    <OverrideVtorValue />
+    <eraseonlaunchrule>0</eraseonlaunchrule>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGcc>
+  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>F_CPU=16500000UL</Value>
+      <Value>CPU_DIV=clock_div_1</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value>../includes</Value>
+    </ListValues>
+  </avrgcc.compiler.directories.IncludePaths>
+  <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.OtherFlags>-fno-tree-scev-cprop -ffreestanding</avrgcc.compiler.optimization.OtherFlags>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcc.compiler.miscellaneous.OtherFlags>-std=gnu99 -Wstrict-prototypes -Wextra</avrgcc.compiler.miscellaneous.OtherFlags>
+  <avrgcc.assembler.general.AssemblerFlags>-DF_CPU=16500000UL</avrgcc.assembler.general.AssemblerFlags>
+</AvrGcc>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGcc>
+  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>F_CPU=16500000UL</Value>
+      <Value>CPU_DIV=clock_div_1</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value>../includes</Value>
+    </ListValues>
+  </avrgcc.compiler.directories.IncludePaths>
+  <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.OtherFlags>-fno-tree-scev-cprop -ffreestanding</avrgcc.compiler.optimization.OtherFlags>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcc.compiler.miscellaneous.OtherFlags>-std=gnu99 -Wstrict-prototypes -Wextra</avrgcc.compiler.miscellaneous.OtherFlags>
+  <avrgcc.assembler.general.AssemblerFlags>-DF_CPU=16500000UL</avrgcc.assembler.general.AssemblerFlags>
+  <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
+</AvrGcc>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="eeprom.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\common.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\config.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\eeprom.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\leds.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\settings.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\typedefs.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\usb.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\usbLedController.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\util.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="includes\wdt.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="leds.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="settings.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usb.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbdrv\oddebug.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbdrv\oddebug.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbdrv\usbconfig.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbdrv\usbdrv.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbdrv\usbdrvasm.S">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbdrv\usbportability.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="usbLedController.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="wdt.c">
+      <SubType>compile</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="includes" />
+    <Folder Include="usbdrv" />
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
+</Project>
