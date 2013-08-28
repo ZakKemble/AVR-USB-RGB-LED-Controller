@@ -17,7 +17,7 @@ void device_end(void);
 bool device_open(void);
 void device_close(void);
 bool device_valid(void);
-bool device_poke(bool);
+bool device_poke(void);
 void device_reset(void);
 void device_setMode(byte);
 bool device_setColour(s_rgbVal*);

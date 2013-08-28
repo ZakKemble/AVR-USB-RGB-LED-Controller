@@ -2,8 +2,8 @@
 
 SOURCES= \
 	rgbledctrl.c \
-	eeprom.c \
-	opendevice.c
+	rgbledctrl_cpp.cpp \
+	eeprom.c
 
 CFLAGS= \
 	-c \
@@ -16,28 +16,43 @@ CFLAGS= \
 	-fmessage-length=0 \
 	-fPIC
 
+CXXFLAGS= \
+	-c \
+	-Wall \
+	-Wextra \
+	-Wunused-result \
+	-O3 \
+	-fmessage-length=0 \
+	-fPIC
+
 LDFLAGS= \
-	-lusb \
 	-s \
 	-shared
+
+LDLIBS= \
+	-lusb
 
 EXECUTABLE=librgbledctrl.so
 ARCHIVE=librgbledctrl.a
 
 CC=gcc
-OBJECTS=$(SOURCES:.c=.o)
-
+CXX=g++
+TMP=$(SOURCES:.cpp=.o)
+OBJECTS=$(TMP:.c=.o)
 
 all: $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) -o $@
 	ar rcs $(ARCHIVE) $(OBJECTS)
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 clean:
 	rm -rf *.o $(EXECUTABLE) $(ARCHIVE)
 
-.PHONY: all clean
+.PHONY: clean all

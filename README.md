@@ -9,7 +9,7 @@ The library also has support for reading and writing to the EEPROM of the contro
 
 ##Documentation
 
-		http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
+		http://zkemble.github.io/AVR-USB-RGB-LED-Controller/
 
 ##Getting it working
 ###Microcontroller

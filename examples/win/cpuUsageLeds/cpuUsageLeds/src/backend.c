@@ -132,7 +132,7 @@ static DWORD WINAPI mainThread(LPVOID args)
 {
 	UNREFERENCED_PARAMETER(args);
 
-	bool usbOk = false;
+	bool usbOk = true;
 	byte checkCounter = 0;
 	byte pokeCounter = 0;
 
@@ -175,7 +175,7 @@ static DWORD WINAPI mainThread(LPVOID args)
 		}
 
 		// Send to USB
-		if(checkDevice(usbOk))
+		if((usbOk = checkDevice(usbOk)))
 		{
 			if(device_get()->ledMode == MODE_CPU_USAGE)
 			{
@@ -193,7 +193,7 @@ static DWORD WINAPI mainThread(LPVOID args)
 				if(++pokeCounter >= (USB_POKE_INTERVAL / SAMPLERATE))
 				{
 					pokeCounter = 0;
-					usbOk = device_poke(false);
+					usbOk = device_poke();
 				}
 			}
 		}
@@ -236,6 +236,7 @@ static bool checkDevice(bool usbOk)
 {
 	if(!usbOk || !device_valid())
 	{
+		device_close();
 		device_open();
 		actions_showConnectionStatus();
 		if(!device_valid())

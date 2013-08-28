@@ -58,6 +58,8 @@
             this.btnIdleTime = new System.Windows.Forms.Button();
             this.pbUsbOk = new System.Windows.Forms.PictureBox();
             this.tmrPoke = new System.Windows.Forms.Timer(this.components);
+            this.cmbDevices = new System.Windows.Forms.ComboBox();
+            this.label3 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.tbRed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbGreen)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tbBlue)).BeginInit();
@@ -362,15 +364,35 @@
             // 
             // tmrPoke
             // 
-            this.tmrPoke.Enabled = true;
             this.tmrPoke.Interval = 200;
             this.tmrPoke.Tick += new System.EventHandler(this.tmrPoke_Tick);
+            // 
+            // cmbDevices
+            // 
+            this.cmbDevices.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbDevices.FormattingEnabled = true;
+            this.cmbDevices.Location = new System.Drawing.Point(264, 449);
+            this.cmbDevices.Name = "cmbDevices";
+            this.cmbDevices.Size = new System.Drawing.Size(75, 21);
+            this.cmbDevices.TabIndex = 14;
+            this.cmbDevices.DropDown += new System.EventHandler(this.cmbDevices_DropDown);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(214, 454);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(44, 13);
+            this.label3.TabIndex = 15;
+            this.label3.Text = "Device:";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(636, 483);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.cmbDevices);
             this.Controls.Add(this.pbUsbOk);
             this.Controls.Add(this.btnIdleTime);
             this.Controls.Add(this.nudIdleTime);
@@ -381,6 +403,8 @@
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -435,6 +459,8 @@
         private System.Windows.Forms.Timer tmrPoke;
         private System.Windows.Forms.CheckBox cbCapScreen;
         private System.Windows.Forms.CheckBox cbGamma;
+        private System.Windows.Forms.ComboBox cmbDevices;
+        private System.Windows.Forms.Label label3;
     }
 }
 

@@ -1,1 +1,3 @@
-Copy ./examples/win/setrgbled/setrgbled/src/main.c to this directory
+Copy
+./examples/win/setrgbled/setrgbled/src/main.c
+to this directory

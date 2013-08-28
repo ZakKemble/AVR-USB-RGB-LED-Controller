@@ -16,143 +16,380 @@
 #include "rgbledctrl.h"
 #include "eeprom.h"
 #include "mcu.h"
-#include "opendevice.h"
 
 #define USB_TIMEOUT 2000
 
-typedef unsigned int uint;
-typedef unsigned short ushort;
+typedef struct usb_device usb_dev;
+typedef struct s_rgbled_list s_rgbled_list;
+struct s_rgbled_list{
+	s_rgbled_list* next;
+	usb_dev* dev;
+	uint id;
+};
 
-static s_rgbled_device device;
+// Linked list of RGB LED devices
+static s_rgbled_list* rgbLedDevList;
 
-static void getData(void);
-static bool USBsend(byte, int, int, char*, uint);
-static int doUSBsend(byte, int, int, char*, uint);
+static void clearUsbDevList(void);
+static void addUsbDevList(int, usb_dev*);
+static int usbGetStringAscii(usb_dev_handle*, int , char*, int);
+static s_rgbled_device* open(usb_dev*);
+static void getData(s_rgbled_device*);
+static bool USBsend(s_rgbled_device*, byte, int, int, char*, uint);
+static int doUSBsend(usb_dev_handle*, byte, int, int, char*, uint);
 
 // Init, must be called before anything else!
 void rgbledctrl_init()
 {
+	rgbLedDevList = NULL;
 	usb_init();
 }
 
-// Open handle to RGB LED controller
-bool rgbledctrl_open()
+// Based on V-USB example code by Christian Starkjohann
+uint rgbledctrl_find()
 {
-	rgbledctrl_close();
-	bool valid = (usbOpenDevice(&device.handle, VEN_ID, VEN_NAME, DEV_ID, DEV_NAME, "*", NULL, stderr) == USBOPEN_SUCCESS);
-	if(valid)
-		getData();
-	return valid;
+	uint count = 0;
+
+	clearUsbDevList();
+
+	usb_find_busses();
+	usb_find_devices();
+
+	for(struct usb_bus* bus = usb_get_busses(); bus; bus = bus->next)
+	{
+		for(usb_dev* dev = bus->devices; dev; dev = dev->next)
+		{
+			// Check vendor and product IDs
+			if(dev->descriptor.idVendor != VEN_ID || dev->descriptor.idProduct != DEV_ID)
+				continue;
+
+			// Open device
+			usb_dev_handle* handle = usb_open(dev);
+			if(!handle)
+			{
+				fprintf(stderr, "Warning: cannot open VID=0x%04x PID=0x%04x: %s\n", dev->descriptor.idVendor, dev->descriptor.idProduct, usb_strerror());
+				continue;
+			}
+
+			int len;
+
+			// Check vendor/manufacturer ID
+			char vendor[256];
+			len = 0;
+			vendor[0] = 0x00;
+			if(dev->descriptor.iManufacturer > 0)
+				len = usbGetStringAscii(handle, dev->descriptor.iManufacturer, vendor, sizeof(vendor));
+
+			if(len >= 0)
+			{
+				if(strcmp(vendor, VEN_NAME) == 0)
+				{
+					// Check product/device ID
+					char product[256];
+					len = 0;
+					product[0] = 0x00;
+					if(dev->descriptor.iProduct > 0)
+						len = usbGetStringAscii(handle, dev->descriptor.iProduct, product, sizeof(product));
+
+					if(len >= 0)
+					{
+						if(strcmp(product, DEV_NAME) == 0)
+						{
+							addUsbDevList(count, dev);
+							count++;
+						}
+					}
+					else
+						fprintf(stderr, "Warning: cannot query product for VID=0x%04x PID=0x%04x: %s\n", dev->descriptor.idVendor, dev->descriptor.idProduct, usb_strerror());
+				}
+			}
+			else
+				fprintf(stderr, "Warning: cannot query manufacturer for VID=0x%04x PID=0x%04x: %s\n", dev->descriptor.idVendor, dev->descriptor.idProduct, usb_strerror());
+
+			usb_close(handle);
+		}
+	}
+
+	return count;
+}
+
+bool rgbledctrl_sameDevice(usb_dev_handle* handle1, usb_dev_handle* handle2)
+{
+	if(!handle1 || !handle2)
+		return false;
+
+	usb_dev* dev1 = usb_device(handle1);
+	usb_dev* dev2 = usb_device(handle2);
+	return dev1 == dev2;
+}
+
+s_rgbled_device* rgbledctrl_open()
+{
+	if(rgbLedDevList)
+		return open(rgbLedDevList->dev);
+	return NULL;
+}
+
+s_rgbled_device* rgbledctrl_open_byIndex(uint idx)
+{
+	// Find device with ID
+	usb_dev* dev = NULL;
+	for(s_rgbled_list* rgbLed = rgbLedDevList; rgbLed; rgbLed = rgbLed->next)
+	{
+		if(rgbLed->id == idx)
+		{
+			dev = rgbLed->dev;
+			break;
+		}
+	}
+
+	return open(dev);
+}
+
+s_rgbled_device* rgbledctrl_open_byEEPROM(byte value, eepAddr_t address)
+{
+	usb_dev* dev = NULL;
+	for(s_rgbled_list* rgbLed = rgbLedDevList; rgbLed; rgbLed = rgbLed->next)
+	{
+		usb_dev_handle* handle = usb_open(rgbLed->dev);
+		if(!handle)
+		{
+			fprintf(stderr, "Unable open USB handle. Have you called rgbledctrl_find() recently? (%s)\n", __func__);
+			continue;
+		}
+
+		s_rgbled_device device;
+		device.handle = handle;
+		byte data;
+		bool res = rgbledctrl_eeprom_read(&device, &data, address);
+
+		usb_close(handle);
+
+		if(!res)
+		{
+			fprintf(stderr, "Unable to read EEPROM (%s)\n", __func__);
+			continue;
+		}
+
+		if(data == value)
+		{
+			dev = rgbLed->dev;
+			break;
+		}
+	}
+
+	return open(dev);
 }
 
 // Close handle
-void rgbledctrl_close()
+void rgbledctrl_close(s_rgbled_device* device)
 {
-//	rgbledctrl_eeprom_clear();
-	if(rgbledctrl_valid())
-	{
-		usb_close(device.handle);
-		device.handle = NULL;
-	}
-}
+	if(!device)
+		return;
 
-// Check handle
-bool rgbledctrl_valid()
-{
-	return (device.handle != NULL);
+//	rgbledctrl_eeprom_clear();
+
+	usb_close(device->handle);
+	device->handle = NULL;
+	free(device);
+//	device = NULL;
 }
 
 // Send a poke
 // Pokes do nothing other than seeing if the device is still connected
-// This function can also try reconnecting if poke failed
-bool rgbledctrl_poke(bool autoReconnect)
+bool rgbledctrl_poke(s_rgbled_device* device)//, bool autoReconnect)
 {
+	if(!device)
+		return false;
+
 	bool valid = false;
 
-	if(rgbledctrl_valid())
-		valid = USBsend(USB_REQ_POKE, 0, 0, NULL, 0);
-
+	valid = USBsend(device, USB_REQ_POKE, 0, 0, NULL, 0);
+/*
 	if(!valid && autoReconnect)
-		valid = rgbledctrl_open();
+	{
+		s_rgbled_device* newDevice = open(device);
+		if(newDevice)
+		{
 
+		}
+//		valid = rgbledctrl_open(device);
+	}
+*/
 	return valid;
 }
 
 // Reset device (makes the watchdog timer timeout)
-bool rgbledctrl_reset()
+bool rgbledctrl_reset(s_rgbled_device* device)
 {
-	return USBsend(USB_REQ_RESET, 0, 0, NULL, 0);
+	if(!device)
+		return false;
+	return USBsend(device, USB_REQ_RESET, 0, 0, NULL, 0);
 }
 
 // Set idle time
-bool rgbledctrl_setIdleTime(byte value)
+bool rgbledctrl_setIdleTime(s_rgbled_device* device, byte value)
 {
-	device.settings.idleTime = value;
-	return USBsend(USB_REQ_IDLETIME, value, 0, NULL, 0);
+	if(!device)
+		return false;
+	device->settings.idleTime = value;
+	return USBsend(device, USB_REQ_IDLETIME, value, 0, NULL, 0);
 }
 
 // Set red, green and blue values with a single USB request
-bool rgbledctrl_setRGB(s_rgbVal* colour)
+bool rgbledctrl_setRGB(s_rgbled_device* device, s_rgbVal* colour)
 {
-	memcpy(&device.rgb, colour, sizeof(s_rgbVal));
+	if(!device)
+		return false;
+	memcpy(&device->rgb, colour, sizeof(s_rgbVal));
 	int data1 = (colour->green<<8) | colour->red;
-	return USBsend(USB_REQ_LED_RGB, data1, colour->blue, NULL, 0);
+	return USBsend(device, USB_REQ_LED_RGB, data1, colour->blue, NULL, 0);
 }
 
 // Set red value
-bool rgbledctrl_setR(byte value)
+bool rgbledctrl_setR(s_rgbled_device* device, byte value)
 {
-	device.rgb.red = value;
-	return USBsend(USB_REQ_LED_R, value, 0, NULL, 0);
+	if(!device)
+		return false;
+	device->rgb.red = value;
+	return USBsend(device, USB_REQ_LED_R, value, 0, NULL, 0);
 }
 
 // Set green value
-bool rgbledctrl_setG(byte value)
+bool rgbledctrl_setG(s_rgbled_device* device, byte value)
 {
-	device.rgb.green = value;
-	return USBsend(USB_REQ_LED_G, value, 0, NULL, 0);
+	if(!device)
+		return false;
+	device->rgb.green = value;
+	return USBsend(device, USB_REQ_LED_G, value, 0, NULL, 0);
 }
 
 // Set blue value
-bool rgbledctrl_setB(byte value)
+bool rgbledctrl_setB(s_rgbled_device* device, byte value)
 {
-	device.rgb.blue = value;
-	return USBsend(USB_REQ_LED_B, value, 0, NULL, 0);
+	if(!device)
+		return false;
+	device->rgb.blue = value;
+	return USBsend(device, USB_REQ_LED_B, value, 0, NULL, 0);
 }
 
-// Get pointer to device stuff
-s_rgbled_device* rgbledctrl_getDevice()
+// Clear linked list of all devices
+static void clearUsbDevList()
 {
-	return &device;
+	s_rgbled_list* rgbLedDev = rgbLedDevList;
+	while(rgbLedDev)
+	{
+		s_rgbled_list* temp = rgbLedDev;
+		rgbLedDev = rgbLedDev->next;
+		free(temp);
+	}
+	rgbLedDevList = NULL;
 }
 
-// Get device info, version, eeprom size etc
-static void getData()
+// Add a device to linked list
+static void addUsbDevList(int id, usb_dev* dev)
+{
+	s_rgbled_list* rgbLedDev = rgbLedDevList;
+	if(rgbLedDev)
+	{
+		// Find last item
+		for(;rgbLedDev->next;rgbLedDev = rgbLedDev->next){};
+
+		// Make next item
+		rgbLedDev->next = malloc(sizeof(s_rgbled_list));
+		rgbLedDev = rgbLedDev->next;
+	}
+	else
+	{
+		// Make root item
+		rgbLedDevList = malloc(sizeof(s_rgbled_list));
+		rgbLedDev = rgbLedDevList;
+	}
+
+	// Assign data
+	rgbLedDev->next = NULL;
+	rgbLedDev->dev = dev;
+	rgbLedDev->id = id;
+}
+
+// Based on V-USB example code by Christian Starkjohann
+static int usbGetStringAscii(usb_dev_handle* dev, int index, char *buf, int buflen)
+{
+	char buffer[256];
+	int rval, i;
+
+	if((rval = usb_get_string_simple(dev, index, buf, buflen)) >= 0) /* use libusb version if it works */
+		return rval;
+	else if((rval = usb_control_msg(dev, USB_ENDPOINT_IN, USB_REQ_GET_DESCRIPTOR, (USB_DT_STRING << 8) + index, 0x0409, buffer, sizeof(buffer), USB_TIMEOUT)) < 0)
+		return rval;
+
+	if(buffer[1] != USB_DT_STRING)
+	{
+		*buf = 0;
+		return 0;
+	}
+
+	if((unsigned char)buffer[0] < rval)
+		rval = (unsigned char)buffer[0];
+
+	rval /= 2;
+
+	/* lossy conversion to ISO Latin1: */
+	for(i=1;i<rval && i < buflen;i++)
+	{
+		if(buffer[2 * i + 1] == 0)
+			buf[i - 1] = buffer[2 * i];
+		else  /* outside of ISO Latin1 range */
+			buf[i - 1] = '?';
+	}
+	buf[i - 1] = 0;
+
+	return i - 1;
+}
+
+// Open handle to RGB LED controller
+static s_rgbled_device* open(usb_dev* dev)
+{
+	if(!dev)
+		return NULL;
+
+	usb_dev_handle* handle = usb_open(dev);
+	if(!handle)
+		return NULL;
+
+	s_rgbled_device* device = calloc(1, sizeof(s_rgbled_device));
+	device->handle = handle;
+	getData(device);
+	return device;
+}
+
+// Get device info, version, EEPROM size etc
+static void getData(s_rgbled_device* device)
 {
 	byte buffer[8];
-	if(USBsend(USB_REQ_DEVSTATE, 0, 0, (char*)buffer, sizeof(buffer)))
+	if(USBsend(device, USB_REQ_DEVSTATE, 0, 0, (char*)buffer, sizeof(buffer)))
 	{
-		device.version[0]			= buffer[1];
-		device.version[1]			= buffer[0];
-		device.eepromSize			= (eepAddr_t)(buffer[2]<<8 | buffer[3]);
-		device.settings.idleTime	= buffer[4];
-		device.rgb.red				= buffer[5];
-		device.rgb.green			= buffer[6];
-		device.rgb.blue				= buffer[7];
+		device->version[0]			= buffer[1];
+		device->version[1]			= buffer[0];
+		device->eepromSize			= (eepAddr_t)(buffer[2]<<8 | buffer[3]);
+		device->settings.idleTime	= buffer[4];
+		memcpy(&device->rgb, &buffer[5], sizeof(s_rgbVal));
 	}
 }
 
-static bool USBsend(byte reqType, int data1, int data2, char* out, uint size)
+static bool USBsend(s_rgbled_device* device, byte reqType, int data1, int data2, char* out, uint size)
 {
-	return doUSBsend(reqType, data1, data2, out, size) >= 0;
+	if(!device)
+		return false;
+	return doUSBsend(device->handle, reqType, data1, data2, out, size) >= 0;
 }
 
-static int doUSBsend(byte reqType, int data1, int data2, char* out, uint size)
+static int doUSBsend(usb_dev_handle* handle, byte reqType, int data1, int data2, char* out, uint size)
 {
-	if(!rgbledctrl_valid())
+	if(!handle)
 		return -1;
 
-	return usb_control_msg(device.handle,
+	return usb_control_msg(handle,
 		USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
 		reqType, data1, data2, out, size, USB_TIMEOUT);
 }
@@ -166,17 +403,33 @@ void rgbledctrl_eeprom_init(uint commitTime)
 */
 
 // Write a byte to EEPROM
-bool rgbledctrl_eeprom_write(byte value, eepAddr_t address)
+bool rgbledctrl_eeprom_write(s_rgbled_device* device, byte data, eepAddr_t address)
 {
+	if(!device)
+		return false;
+	else if(address >= device->eepromSize)
+	{
+		fprintf(stderr, "EEPROM Write address out of range (Address=%hu EEPROM=%hu)\n", address, device->eepromSize);
+		return false;
+	}
+
 //	eeprom_write(value, address);
-	return USBsend(USB_REQ_EEP_WRITE, value, address, NULL, 0);
+	return USBsend(device, USB_REQ_EEP_WRITE, data, address, NULL, 0);
 }
 
 // Read a byte from EEPROM
-bool rgbledctrl_eeprom_read(byte* data, eepAddr_t address)
+bool rgbledctrl_eeprom_read(s_rgbled_device* device, byte* data, eepAddr_t address)
 {
+	if(!device)
+		return false;
+	else if(address >= device->eepromSize)
+	{
+		fprintf(stderr, "EEPROM Read address out of range (Address=%hu EEPROM=%hu)\n", address, device->eepromSize);
+		return false;
+	}
+
 //	return eeprom_read(address);
-	return USBsend(USB_REQ_EEP_READ, 0, address, (char*)data, sizeof(data));
+	return USBsend(device, USB_REQ_EEP_READ, 0, address, (char*)data, sizeof(data));
 }
 /*
 // Clear all EEPROM data (doesn't send to MCU)

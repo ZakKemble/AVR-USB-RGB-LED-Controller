@@ -8,10 +8,11 @@
 
 #include "win.h"
 #include <rgbledctrl.h>
-//#include <stdio.h>
 #include "typedefs.h"
 #include "device.h"
 #include "mcu.h"
+
+//#include <stdio.h>
 
 static void getData(void);
 static void brightnessSaveDelay(byte);
@@ -27,6 +28,7 @@ static s_device device;
 void device_init()
 {
 	rgbledctrl_init();
+	device.rgbled_device = NULL;
 
 	endThread			= false;
 	hWaitTimer			= CreateWaitableTimer(NULL, FALSE, NULL);
@@ -37,6 +39,8 @@ void device_init()
 void device_end()
 {
 //	puts("Dev end");
+
+	// device_close() ?
 
 	// Signal thread to end
 	endThread = true;
@@ -54,30 +58,33 @@ void device_end()
 // Open device then get additional data from EEPROM
 bool device_open()
 {
-	bool valid = rgbledctrl_open();
-	if(valid)
-		getData();
-	return valid;
+	rgbledctrl_find();
+	device.rgbled_device = rgbledctrl_open();
+	if(!device.rgbled_device)
+		return false;
+	getData();
+	return true;
 }
 
 void device_close()
 {
-	rgbledctrl_close();
+	rgbledctrl_close(device.rgbled_device);
+	device.rgbled_device = NULL;
 }
 
 bool device_valid()
 {
-	return rgbledctrl_valid();
+	return device.rgbled_device != NULL;
 }
 
-bool device_poke(bool autoReconnect)
+bool device_poke()
 {
-	return rgbledctrl_poke(autoReconnect);
+	return rgbledctrl_poke(device.rgbled_device);
 }
 
 void device_reset()
 {
-	rgbledctrl_reset();
+	rgbledctrl_reset(device.rgbled_device);
 }
 
 void device_setMode(byte mode)
@@ -97,7 +104,7 @@ void device_setMode(byte mode)
 
 bool device_setColour(s_rgbVal* colour)
 {
-	return rgbledctrl_setRGB(colour);
+	return rgbledctrl_setRGB(device.rgbled_device, colour);
 }
 
 void device_setTransitionTime(uint16_t time)
@@ -119,17 +126,17 @@ void device_setBrightness(byte brightness)
 
 void device_setIdleTime(byte time)
 {
-	rgbledctrl_setIdleTime(time);
+	rgbledctrl_setIdleTime(device.rgbled_device, time);
 }
 
 bool device_eeprom_write(byte data, eepAddr_t address)
 {
-	return rgbledctrl_eeprom_write(data, address);
+	return rgbledctrl_eeprom_write(device.rgbled_device, data, address);
 }
 
 bool device_eeprom_read(byte* data, eepAddr_t address)
 {
-	return rgbledctrl_eeprom_read(data, address);
+	return rgbledctrl_eeprom_read(device.rgbled_device, data, address);
 }
 
 s_device* device_get()
@@ -140,8 +147,6 @@ s_device* device_get()
 // Get EEPROM data
 static void getData()
 {
-	device.rgbled_device	= rgbledctrl_getDevice();
-
 	// Read settings from EEPROM
 	byte data;
 

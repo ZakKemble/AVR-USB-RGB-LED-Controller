@@ -29,6 +29,7 @@ typedef struct {
 	byte* samples;
 }s_sample;
 
+static s_rgbled_device* rgbLed;
 static s_sample sample;
 static byte brightness;
 
@@ -54,13 +55,15 @@ void backend(byte _brightness, ushort transTime)
 	sample.idx = 0;
 
 	rgbledctrl_init();
+	rgbLed = NULL;
 
 	mainStuff();
 }
 
 void backend_close()
 {
-	rgbledctrl_close();
+	rgbledctrl_close(rgbLed);
+	rgbLed = NULL;
 	if(sample.samples)
 		free(sample.samples);
 }
@@ -68,7 +71,7 @@ void backend_close()
 // Thread that gets and sends CPU usage
 static void mainStuff()
 {
-	bool usbOk = false;
+	bool usbOk = true;
 	byte checkCounter = 0;
 
 	while(1)
@@ -112,7 +115,7 @@ static void mainStuff()
 			getCPUColour(cpuUsage, &colour);
 
 			// Send colour
-			usbOk = rgbledctrl_setRGB(&colour);
+			usbOk = rgbledctrl_setRGB(rgbLed, &colour);
 		}
 	}
 }
@@ -179,9 +182,11 @@ static byte getCPUUsage()
 // See of the device is ok and connected, if not, try reconnecting
 static bool checkDevice(bool usbOk)
 {
-	if(!usbOk || !rgbledctrl_valid())
+	if(!usbOk || !rgbLed)
 	{
-		if(!rgbledctrl_open())
+		rgbledctrl_close(rgbLed);
+		rgbLed = rgbledctrl_open();
+		if(!rgbLed)
 			return false;
 	}
 	return true;

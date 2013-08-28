@@ -23,7 +23,7 @@ static bool alreadyRunning(void);
 
 int main(int argc, char **argv)
 {
-	puts("CPU Usage LEDs v1.2");
+	puts("CPU Usage LEDs v1.3");
 	puts("zakkemble.co.uk");
 
 	bool daemonize = true;

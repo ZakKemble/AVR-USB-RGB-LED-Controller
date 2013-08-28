@@ -1,2 +1,9 @@
+2013-08-28:
+	- Support for multiple devices
+	- C++ Wrapper class
+	- Updated C# .NET wrapper class
+	- Updated examples
+	- Doxygen docs
+
 2013-08-25:
 	- Initial release

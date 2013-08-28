@@ -11,8 +11,8 @@
 
 #define APPNAME 		"CPU Usage LEDs"
 #define APPNAME_TERM	"CPU Usage LEDs\0"
-#define APPVERSION		1,2,0,0
-#define APPVERSION_STR	"1.2.0.0\0"
+#define APPVERSION		1,3,0,0
+#define APPVERSION_STR	"1.3.0.0\0"
 #define APPCOMPANY		"zakkemble.co.uk\0"
 #define APPCOPYRIGHT	"(c) Zak Kemble 2013\0"
 
@@ -21,7 +21,7 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "cpuUsageLeds.exe.manifest"
 STRINGTABLE 
 BEGIN
     IDS_APPNAME		APPNAME
-    IDS_ABOUT		APPNAME "\r\nVersion 1.2\r\nCopyright (c) Zak Kemble 2013\r\n\r\nzakkemble.co.uk"
+    IDS_ABOUT		APPNAME "\r\nVersion 1.3\r\nCopyright (c) Zak Kemble 2013\r\n\r\nzakkemble.co.uk"
 END
 IDI_MAIN		ICON	"cpuUsageLeds.ico"
 IDI_SMALL		ICON	"cpuUsageLeds_sm.ico"

@@ -66,21 +66,13 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[argIdx], "colour") == 0)
 		{
 			setColour = true;
-
-			// Red
 			colour.red = getArgVal(&argIdx, argc, argv, 255);
-
-			// Green
 			colour.green = getArgVal(&argIdx, argc, argv, 255);
-
-			// Blue
 			colour.blue = getArgVal(&argIdx, argc, argv, 255);
 		}
 		else if(strcmp(argv[argIdx], "idletime") == 0)
 		{
 			setIdleTime = true;
-
-			// Time
 			idleTime = getArgVal(&argIdx, argc, argv, 255);
 		}
 		else if(strcmp(argv[argIdx], "eeprom") == 0)
@@ -89,19 +81,13 @@ int main(int argc, char **argv)
 			if(strcmp(argv[argIdx], "r") == 0)
 			{
 				readEEPROM = true;
-
-				// Address
-				readEEPROMAddress = getArgVal(&argIdx, argc, argv, 0);
+				readEEPROMAddress = getArgVal(&argIdx, argc, argv, 0); // Address
 			}
 			else if(strcmp(argv[argIdx], "w") == 0)
 			{
 				writeEEPROM = true;
-
-				// Address
-				writeEEPROMAddress = getArgVal(&argIdx, argc, argv, 0);
-
-				// Data
-				writeEEPROMData = getArgVal(&argIdx, argc, argv, 255);
+				writeEEPROMAddress = getArgVal(&argIdx, argc, argv, 0); // Address
+				writeEEPROMData = getArgVal(&argIdx, argc, argv, 255); // Data
 			}
 			else
 			{
@@ -111,64 +97,67 @@ int main(int argc, char **argv)
 		}
 	}
 
+	// Initialise
 	rgbledctrl_init();
-	if(rgbledctrl_open()) // Try opening USB handle
+
+	// Find controllers
+	uint count = rgbledctrl_find();
+	printf("RGB LED Controllers found: %d\n", count);
+
+	// Loop over found controllers
+	for(uint i=0;i<count;i++)
 	{
-		// Get pointer to state, which includes things like firmware version and user EEPROM size
-		s_rgbled_device* device = rgbledctrl_getDevice();
+		printf("Opening device (Index: %u)\n", i);
+		s_rgbled_device* rgbLed = rgbledctrl_open_byIndex(i); // Try opening
+
+		if(!rgbLed) // Failed to open
+		{
+			fprintf(stderr, "Could not open device (Index: %u)\n", i);
+			continue;
+		}
+
+		printf("Device opened (Index: %u)\n", i);
 
 		if(getInfo)
 		{
 			// Version
-			printf("Firmware version: %hhu.%hhu\n", device->version[0], device->version[1]);
+			printf("Firmware version: %hhu.%hhu\n", rgbLed->version[0], rgbLed->version[1]);
 
 			// User EEPROM size
-			printf("User EEPROM size: %hu bytes\n", device->eepromSize);
+			printf("User EEPROM size: %hu bytes\n", rgbLed->eepromSize);
 
 			// Colour
-			printf("Current colour:\nRed: %hhu\nGreen: %hhu\nBlue: %hhu\n", device->rgb.red, device->rgb.green, device->rgb.blue);
+			printf("Current colour:\nRed: %hhu\nGreen: %hhu\nBlue: %hhu\n", rgbLed->rgb.red, rgbLed->rgb.green, rgbLed->rgb.blue);
 
 			// Idle time
-			printf("Idle time: %hhu\n", device->settings.idleTime);
+			printf("Idle time: %hhu\n", rgbLed->settings.idleTime);
 		}
 
 		// Set colour
 		if(setColour)
-			rgbledctrl_setRGB(&colour);
+			rgbledctrl_setRGB(rgbLed, &colour);
 
 		// Set idle time
 		if(setIdleTime)
-			rgbledctrl_setIdleTime(idleTime);
+			rgbledctrl_setIdleTime(rgbLed, idleTime);
 
 		// Read EEPROM
 		if(readEEPROM)
 		{
-			if(readEEPROMAddress < device->eepromSize)
-			{
-				byte data;
-				rgbledctrl_eeprom_read(&data, readEEPROMAddress);
+			byte data;
+			if(rgbledctrl_eeprom_read(rgbLed, &data, readEEPROMAddress))
 				printf("%hhu", data);
-			}
-			else
-				fprintf(stderr, "EEPROM Read address out of range\n");
 		}
 
 		// Write EEPROM
 		if(writeEEPROM)
-		{
-			if(writeEEPROMAddress < device->eepromSize)
-				rgbledctrl_eeprom_write(writeEEPROMData, writeEEPROMAddress);
-			else
-				fprintf(stderr, "EEPROM Write address out of range\n");
-		}
+			rgbledctrl_eeprom_write(rgbLed, writeEEPROMData, writeEEPROMAddress);
 
 		// Close USB handle
-		rgbledctrl_close();
-	}
-	else // Failed to open
-	{
-		fprintf(stderr, "Could not open device\n");
-		exit(EXIT_FAILURE);
+		rgbledctrl_close(rgbLed);
+		rgbLed = NULL;
+
+		printf("Device closed (Index: %u)\n", i);
 	}
 
 	return EXIT_SUCCESS;

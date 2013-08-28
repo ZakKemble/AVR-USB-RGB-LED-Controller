@@ -1,7 +1,7 @@
 # Makefile for Set RGB LED example
 
 SOURCES= \
-	main.c \
+	main.c
 
 CFLAGS= \
 	-c \
@@ -13,25 +13,40 @@ CFLAGS= \
 	-std=c99 \
 	-fmessage-length=0
 
+CXXFLAGS= \
+	-c \
+	-Wall \
+	-Wextra \
+	-Wunused-result \
+	-O3 \
+	-fmessage-length=0
+
 LDFLAGS= \
-	-lrgbledctrl \
 	-s
+
+LDLIBS= \
+	-lrgbledctrl
 
 EXECUTABLE=setrgbled
 
 CC=gcc
-OBJECTS=$(SOURCES:.c=.o)
+CXX=g++
+TMP=$(SOURCES:.cpp=.o)
+OBJECTS=$(TMP:.c=.o)
 
 
 all: $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 clean:
 	rm -rf *.o $(EXECUTABLE)
 
-.PHONY: all clean
+.PHONY: clean all

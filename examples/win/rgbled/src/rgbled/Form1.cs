@@ -19,7 +19,9 @@ namespace rgbled
     public partial class Form1 : Form
     {
         private const double GAMMA_CORRECTION = 2.2;
+		private const int SCREENCAP_INTERVAL = 50;
         private bool ignoreEvent = false;
+        private Rgbledctrl rgbLed;
 
         public Form1()
         {
@@ -46,10 +48,16 @@ namespace rgbled
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Must be called before any other Rgbledctrl stuff!
+            // Must be called before any other stuff!
             Rgbledctrl.init();
 
-            // 
+            // Create RGB LED object
+            rgbLed = new Rgbledctrl();
+
+			// Start poke timer
+            tmrPoke.Enabled = true;
+
+            // Thread for getting average screen colour
             Thread t = new Thread(new ThreadStart(tCapScreen));
             t.IsBackground = true;
             t.Start();
@@ -63,39 +71,64 @@ namespace rgbled
         // Open
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            if (Rgbledctrl.open())
-                writeToLog("Device opened");
+            if (cmbDevices.SelectedItem == null || cmbDevices.SelectedItem.ToString() == "")
+                writeToLog("No device selected");
             else
-                writeToLog("Failed to open device");
+            {
+                uint device;
+                uint.TryParse(cmbDevices.SelectedItem.ToString(), out device);
+
+                writeToLog(String.Format("Opening device #{0}", device));
+
+                Rgbledctrl newRgbLed = new Rgbledctrl();
+
+                if (newRgbLed.open(device)) // Open
+                {
+                    // See if the new handle and old handle are handles to the same device
+                    if (!Rgbledctrl.sameDevice(rgbLed.handle, newRgbLed.handle))
+                    {
+                        writeToLog("Device opened");
+                        rgbLed.close(); // Close old handle
+                        rgbLed = newRgbLed;
+                    }
+                    else
+                    {
+                        writeToLog("Device is already open");
+                        newRgbLed.close(); // Close handle
+                    }
+                }
+                else // Failed to open
+                    writeToLog("Failed to open device");
+            }
+
             writeToLog("------");
         }
 
         // Get info
         private void btnInfo_Click(object sender, EventArgs e)
         {
-            if (!Rgbledctrl.poke(false))
+            // See if device is available
+            if (!rgbLed.poke())
             {
                 writeToLog("Device not available");
                 writeToLog("------");
                 return;
             }
 
-            Rgbledctrl.s_rgbled_device device = new Rgbledctrl.s_rgbled_device();
-            Rgbledctrl.getDevice(ref device);
-
-            writeToLog(String.Format("Firmware version: {0}.{1}", device.version[0], device.version[1]));
-            writeToLog(String.Format("User EEPROM size: {0}", device.eepromSize));
-            writeToLog(String.Format("Red: {0}", device.rgb.red));
-            writeToLog(String.Format("Green: {0}", device.rgb.green));
-            writeToLog(String.Format("Blue: {0}", device.rgb.blue));
-            writeToLog(String.Format("Idle time: {0}", device.settings.idleTime));
+            // Print info
+            writeToLog(String.Format("Firmware version: {0}.{1}", rgbLed.version[0], rgbLed.version[1]));
+            writeToLog(String.Format("User EEPROM size: {0}", rgbLed.eepromSize));
+            writeToLog(String.Format("Red: {0}", rgbLed.colour.R));
+            writeToLog(String.Format("Green: {0}", rgbLed.colour.G));
+            writeToLog(String.Format("Blue: {0}", rgbLed.colour.B));
+            writeToLog(String.Format("Idle time: {0}", rgbLed.idleTime));
             writeToLog("------");
         }
 
-        // Close
+        // Close device
         private void btnClose_Click(object sender, EventArgs e)
         {
-            Rgbledctrl.close();
+            rgbLed.close();
             writeToLog("Device closed");
             writeToLog("------");
         }
@@ -103,7 +136,6 @@ namespace rgbled
         // Reset device
         private void btnReset_Click(object sender, EventArgs e)
         {
-            Rgbledctrl.reset();
             writeToLog("Device reset");
             writeToLog("------");
         }
@@ -111,7 +143,7 @@ namespace rgbled
         // Set idle time
         private void btnIdleTime_Click(object sender, EventArgs e)
         {
-            if(Rgbledctrl.setIdleTime((byte)nudIdleTime.Value))
+            if(rgbLed.setIdleTime((byte)nudIdleTime.Value))
                 writeToLog("Idle time set");
             else
                 writeToLog("Device not available");
@@ -124,10 +156,12 @@ namespace rgbled
             if (ignoreEvent)
                 return;
 
+            // Get trackbar values
             byte red = (byte)tbRed.Value;
             byte green = (byte)tbGreen.Value;
             byte blue = (byte)tbBlue.Value;
 
+            // Set numeric box values
             ignoreEvent = true;
             nudRed.Value = red;
             nudGreen.Value = green;
@@ -143,10 +177,12 @@ namespace rgbled
             if (ignoreEvent)
                 return;
 
+            // Get numeric box values
             byte red = (byte)nudRed.Value;
             byte green = (byte)nudGreen.Value;
             byte blue = (byte)nudBlue.Value;
 
+            // Set trackbar values
             ignoreEvent = true;
             tbRed.Value = red;
             tbGreen.Value = green;
@@ -169,12 +205,9 @@ namespace rgbled
                 blue = (byte)(Math.Pow(blue / 255.0, GAMMA_CORRECTION) * 255);
             }
 
-            Rgbledctrl.s_rgbVal colour = new Rgbledctrl.s_rgbVal();
-            colour.red = red;
-            colour.green = green;
-            colour.blue = blue;
+            Color colour = Color.FromArgb(red, green, blue);
 
-            if(Rgbledctrl.setRGB(ref colour))
+            if(rgbLed.setRGB(colour))
                 writeToLog(String.Format("Set RGB {0} {1} {2}", red, green, blue));
             else
                 writeToLog("Device not available");
@@ -184,21 +217,21 @@ namespace rgbled
         // Read EEPROM
         private void btnEEPROMRead_Click(object sender, EventArgs e)
         {
-            if (!Rgbledctrl.poke(false))
+            // See if device is available
+            if (!rgbLed.poke())
             {
                 writeToLog("Device not available");
                 writeToLog("------");
                 return;
             }
 
-            Rgbledctrl.s_rgbled_device device = new Rgbledctrl.s_rgbled_device();
-            Rgbledctrl.getDevice(ref device);
-
             byte value = new byte();
             lvEEPROM.Items.Clear();
-            for (ushort i = 0; i < device.eepromSize; i++)
+			
+			// Read all EEPROM locations
+            for (ushort i = 0; i < rgbLed.eepromSize; i++)
             {
-                Rgbledctrl.eeprom_read(ref value, i);
+                rgbLed.eeprom_read(ref value, i);
                 lvEEPROM.Items.Add(new ListViewItem(new string[] { i.ToString(), value.ToString() }));
             }
         }
@@ -209,23 +242,42 @@ namespace rgbled
             ushort location = (ushort)nudEEPROMLocation.Value;
             byte value = (byte)nudEEPROMValue.Value;
 
-            if(Rgbledctrl.eeprom_write(value, location))
+            if (rgbLed.eeprom_write(value, location))
                 writeToLog(String.Format("Wrote {0} to location {1}", value, location));
             else
                 writeToLog("Device not available");
             writeToLog("------");
         }
 
+        // ComboBox drop down opened
+        private void cmbDevices_DropDown(object sender, EventArgs e)
+        {
+			// Find devices
+            uint count = Rgbledctrl.find();
+
+            writeToLog(String.Format("Devices found: {0}", count));
+            writeToLog("------");
+
+            cmbDevices.Items.Clear();
+
+			// Show devices
+            for (uint i = 0; i < count; i++)
+                cmbDevices.Items.Add(i);
+        }
+
+        // Poke timer
         private void tmrPoke_Tick(object sender, EventArgs e)
         {
-            if (Rgbledctrl.poke(false))
+            if (rgbLed.poke())
                 pbUsbOk.BackColor = Color.FromArgb(0, 255, 0);
             else
                 pbUsbOk.BackColor = Color.FromArgb(255, 0, 0);
         }
 
+        // Get average colour of screen
         private void screenCap()
         {
+            // Create bitmap
             Bitmap bmpScreenshot = new Bitmap(
                 Screen.PrimaryScreen.Bounds.Width,
                 Screen.PrimaryScreen.Bounds.Height,
@@ -233,8 +285,11 @@ namespace rgbled
                 );
 
             Graphics gfxScreenshot = Graphics.FromImage(bmpScreenshot);
+            gfxScreenshot.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+            gfxScreenshot.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
             gfxScreenshot.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
 
+            // Get screenshot
             try
             {
                 gfxScreenshot.CopyFromScreen(
@@ -248,13 +303,18 @@ namespace rgbled
             }
             catch (Exception ex)
             {
+                // Oops, something went wrong
                 BeginInvoke(new MethodInvoker(() =>
                 {
                     writeToLog("Error getting screen image: " + ex.Message);
                     writeToLog("------");
                 }));
+                gfxScreenshot.Dispose();
+                bmpScreenshot.Dispose();
+                return;
             }
             
+            // Get average colour
             uint avgRed = 0;
             uint avgGreen = 0;
             uint avgBlue = 0;
@@ -267,22 +327,28 @@ namespace rgbled
 
             int pixelCount = Screen.PrimaryScreen.Bounds.Height * Screen.PrimaryScreen.Bounds.Width;
 
+            //Stopwatch stopWatch = new Stopwatch();
+            //stopWatch.Start();
+
+            // Unsafe code as its much faster than safe code (getPixel() is super slow)
             unsafe
             {
-                int* ptr = (int*)data.Scan0;
-
+                byte* ptr = (byte*)data.Scan0;
                 for (int i = 0; i < pixelCount; i++)
                 {
-                    int pixel = *ptr++;
-
-                    avgRed += (byte)(pixel >> 16);
-                    avgGreen += (byte)(pixel >> 8);
-                    avgBlue += (byte)pixel;
+                    avgRed += *ptr++;
+                    avgGreen += *ptr++;
+                    avgBlue += *ptr++; // 2 for alpha
+                    ptr++;
                 }
             }
 
+            //stopWatch.Stop();
+            //TimeSpan ts = stopWatch.Elapsed;
+
             bmpScreenshot.UnlockBits(data);
 
+            // Dispose now. These images use up a lot of memory
             gfxScreenshot.Dispose();
             bmpScreenshot.Dispose();
 
@@ -290,9 +356,10 @@ namespace rgbled
             byte green = (byte)(avgGreen / pixelCount);
             byte blue = (byte)(avgBlue / pixelCount);
 
-            // 
+            // Set colour
             BeginInvoke(new MethodInvoker(() =>
             {
+                //writeToLog(String.Format(ts.ToString()));
                 ignoreEvent = true;
                 tbRed.Value = red;
                 tbGreen.Value = green;
@@ -305,14 +372,15 @@ namespace rgbled
             }));
         }
 
+        // Screen capture thread
         private void tCapScreen()
         {
-            int interval = 50;
+            int interval = SCREENCAP_INTERVAL;
             while (true)
             {
                 Thread.Sleep(interval);
 
-                //
+                // Start timing
                 Stopwatch stopWatch = new Stopwatch();
                 stopWatch.Start();
 
@@ -321,10 +389,10 @@ namespace rgbled
 
                 stopWatch.Stop();
 
-                // 
+                // WOrkout how long to wait for next screen cap
                 TimeSpan ts = stopWatch.Elapsed;
-                if (ts.Milliseconds < 50)
-                    interval = 50 - ts.Milliseconds;
+                if (ts.Milliseconds < SCREENCAP_INTERVAL)
+                    interval = SCREENCAP_INTERVAL - ts.Milliseconds;
                 else
                     interval = 0;
             }
