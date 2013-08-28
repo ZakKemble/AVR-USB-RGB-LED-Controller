@@ -57,6 +57,10 @@ My productions are published under GNU GPL v3 (see License.txt).
 
 --------
 
+    http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
+
+--------
+
 Zak Kemble
 
 contact@zakkemble.co.uk
