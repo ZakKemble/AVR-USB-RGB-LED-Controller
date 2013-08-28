@@ -8,8 +8,7 @@ The library also has support for reading and writing to the EEPROM of the contro
 
 
 ##Documentation
-
-		http://zkemble.github.io/AVR-USB-RGB-LED-Controller/
+<a href="http://zkemble.github.io/AVR-USB-RGB-LED-Controller/">Doxygen pages</a>
 
 ##Getting it working
 ###Microcontroller
