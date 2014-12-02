@@ -9,7 +9,7 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
-#include <rgbledctrl.h>
+#include <rgbled.h>
 #include "typedefs.h"
 
 void device_init(void);
@@ -20,7 +20,7 @@ bool device_valid(void);
 bool device_poke(void);
 void device_reset(void);
 void device_setMode(byte);
-bool device_setColour(s_rgbVal*);
+bool device_setColour(colour_t*);
 void device_setTransitionTime(uint16_t);
 void device_setBrightness(byte);
 void device_setIdleTime(byte);

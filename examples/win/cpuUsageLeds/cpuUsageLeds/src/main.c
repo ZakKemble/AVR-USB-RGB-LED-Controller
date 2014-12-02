@@ -7,6 +7,7 @@
  */
 
 #include "win.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <shellapi.h>
 #include <commctrl.h>

@@ -43,7 +43,7 @@
 								<option id="gnu.c.link.option.ldflags.2089498159" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="" valueType="string"/>
 								<option id="gnu.c.link.option.libs.1088817300" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="comctl32"/>
-									<listOptionValue builtIn="false" value="rgbledctrl"/>
+									<listOptionValue builtIn="false" value="rgbled"/>
 								</option>
 								<option id="gnu.c.link.option.strip.2095711866" name="Omit all symbol information (-s)" superClass="gnu.c.link.option.strip" value="false" valueType="boolean"/>
 								<option id="gnu.c.link.option.noshared.1167489483" name="No shared libraries (-static)" superClass="gnu.c.link.option.noshared" value="false" valueType="boolean"/>
@@ -100,11 +100,11 @@
 								</option>
 								<option id="gnu.c.link.option.libs.1957215900" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="comctl32"/>
-									<listOptionValue builtIn="false" value="rgbledctrl"/>
+									<listOptionValue builtIn="false" value="rgbled"/>
 								</option>
 								<option id="gnu.c.link.option.noshared.936057402" name="No shared libraries (-static)" superClass="gnu.c.link.option.noshared" value="false" valueType="boolean"/>
 								<option id="gnu.c.link.option.strip.844278449" name="Omit all symbol information (-s)" superClass="gnu.c.link.option.strip" value="true" valueType="boolean"/>
-								<option id="gnu.c.link.option.ldflags.352266222" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-mwindows -Wl,--gc-sections" valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.352266222" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-mwindows" valueType="string"/>
 								<option id="gnu.c.link.option.nostart.1975901567" name="Do not use standard start files (-nostartfiles)" superClass="gnu.c.link.option.nostart" value="false" valueType="boolean"/>
 								<option id="gnu.c.link.option.nodeflibs.1382421415" name="Do not use default libraries (-nodefaultlibs)" superClass="gnu.c.link.option.nodeflibs" value="false" valueType="boolean"/>
 								<option id="gnu.c.link.option.nostdlibs.1653501859" name="No startup or default libs (-nostdlib)" superClass="gnu.c.link.option.nostdlibs" value="false" valueType="boolean"/>

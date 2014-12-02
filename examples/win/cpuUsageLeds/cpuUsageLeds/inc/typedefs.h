@@ -9,10 +9,10 @@
 #ifndef TYPEDEFS_H_
 #define TYPEDEFS_H_
 
-//#include "win.h"
+#include "win.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <rgbledctrl.h>
+#include <rgbled.h>
 
 typedef unsigned char byte;
 typedef unsigned short ushort;
@@ -22,7 +22,7 @@ typedef struct{
 	byte brightness;
 	byte ledMode;
 	uint16_t transitionTime;
-	s_rgbled_device* rgbled_device;
+	rgbled_t* rgbled_device;
 }s_device;
 
 // This extra visible var is because when a window is shown

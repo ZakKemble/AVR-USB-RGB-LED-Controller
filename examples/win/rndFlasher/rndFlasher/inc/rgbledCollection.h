@@ -10,7 +10,7 @@
 #define RGBLEDCOLLECTION_H_
 
 #include <vector>
-#include <rgbledctrl.h>
+#include <rgbled.h>
 
 class rgbledCollection
 {
@@ -18,15 +18,16 @@ public:
 	rgbledCollection();
 	~rgbledCollection();
 	void clear();
-	void add(rgbledctrl*);
-	void remove(uint);
-	rgbledctrl* get(uint);
-	uint size();
-	bool has(rgbledctrl*);
-	void print(uint);
+	void add(rgbled*);
+	void remove(uint32_t);
+	void erase(uint32_t);
+	rgbled* get(uint32_t);
+	uint32_t size();
+	bool has(rgbled*);
+	void print(uint32_t);
 
 private:
-	std::vector<rgbledctrl*> rgbLeds;
+	std::vector<rgbled*> rgbLeds;
 };
 
 #endif /* RGBLEDCOLLECTION_H_ */

@@ -9,8 +9,6 @@
 #ifndef EEPROM_H_
 #define EEPROM_H_
 
-#include "typedefs.h"
-
 #if defined(__AVR_ATtiny85__)
 #define EEPROM_USER_SIZE 507
 #elif defined(__AVR_ATtiny45__)

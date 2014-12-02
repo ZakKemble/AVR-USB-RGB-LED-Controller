@@ -9,10 +9,8 @@
 #ifndef LEDS_H_
 #define LEDS_H_
 
-#include "typedefs.h"
-
 void leds_init(void);
-s_rgbVal* leds_colour(void);
+colour_t* leds_colour(void);
 void leds_apply(void);
 void leds_setColour(byte, byte, byte);
 

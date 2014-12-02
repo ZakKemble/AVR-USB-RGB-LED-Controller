@@ -6,7 +6,7 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#include <rgbledctrl.h>
+#include <rgbled.h>
 #include <stdio.h>
 #include "typedefs.h"
 #include <shellapi.h>
@@ -115,9 +115,9 @@ void actions_showCurrentSettings()
 	s_device* device = device_get();
 
 	// Colour
-	actions_setItemInt(IDC_EDIT_SGL_RED,	device->rgbled_device->rgb.red);
-	actions_setItemInt(IDC_EDIT_SGL_GREEN,	device->rgbled_device->rgb.green);
-	actions_setItemInt(IDC_EDIT_SGL_BLUE,	device->rgbled_device->rgb.blue);
+	actions_setItemInt(IDC_EDIT_SGL_RED,	device->rgbled_device->colour.r);
+	actions_setItemInt(IDC_EDIT_SGL_GREEN,	device->rgbled_device->colour.g);
+	actions_setItemInt(IDC_EDIT_SGL_BLUE,	device->rgbled_device->colour.b);
 
 	// Idle time
 	actions_setItemInt(IDC_EDIT_IDLE_TIME,	device->rgbled_device->settings.idleTime);
@@ -147,7 +147,7 @@ void actions_showConnectionStatus()
 		SetDlgItemText(settingsDlg->dlg, IDC_STATIC_USB_STATUS, "Connected");
 
 		char buff[18];
-		sprintf(buff,"Firmware: %hhu.%hhu", device->rgbled_device->version[0], device->rgbled_device->version[1]);
+		sprintf(buff,"Firmware: %hhu.%hhu", device->rgbled_device->version.major, device->rgbled_device->version.minor);
 		SetDlgItemText(settingsDlg->dlg, IDC_STATIC_USB_FIRMWARE, buff);
 	}
 	else

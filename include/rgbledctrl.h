@@ -6,14 +6,9 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#ifndef RGBLEDCTRL_H_
-#define RGBLEDCTRL_H_
+#ifndef RGBLED_H_
+#define RGBLED_H_
 
-#ifdef _WIN32
-#include <lusb0_usb.h>
-#else
-#include <usb.h>
-#endif
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -22,37 +17,43 @@
 */
 #define RGBLED_IDLETIME_DISABLE	0
 
-typedef unsigned char byte; /**< Typedef for unsigned char */
-typedef unsigned int uint; /**< Typedef for unsigned int */
 typedef uint16_t eepAddr_t; /**< Unsigned 16bit type for EEPROM addresses */
 
-/** @struct s_rgbVal
+/** @struct colour_t
 * @brief Structure for RGB values
 */
 typedef struct{
-	byte red; /**< Red */
-	byte green; /**< Green */
-	byte blue; /**< Blue */
-}s_rgbVal;
+	uint8_t r; /**< Red */
+	uint8_t g; /**< Green */
+	uint8_t b; /**< Blue */
+}colour_t;
 
-/** @struct s_rgbled_deviceSettings
+/** @struct rgbled_settings_t
 * @brief General device settings
 */
 typedef struct{
-	byte idleTime; /**< Current idle timeout */
-}s_rgbled_deviceSettings;
+	uint8_t idleTime; /**< Current idle timeout */
+}rgbled_settings_t;
 
-/** @struct s_rgbled_device
-* @brief RGB LED Device
-* @todo Add usb_device* attribute?
+/** @struct rgbled_version_t
+* @brief blah
 */
 typedef struct{
-	usb_dev_handle* handle; /**< USB Handle */
-	byte version[2]; /**< Firmware version */
-	eepAddr_t eepromSize; /**< EEPROM Size */
-	s_rgbVal rgb; /**< Current RGB value */
-	s_rgbled_deviceSettings settings; /**< Other settings */
-}s_rgbled_device;
+	uint8_t major; /**< Major */
+	uint8_t minor; /**< Minor */
+}rgbled_version_t;
+
+/** @struct rgbled_t
+* @brief RGB LED Device
+*/
+typedef struct{
+	void*				handle;		/**< Device handle */
+	char*				path;		/**< Device path, used to identify the physical device */
+	rgbled_version_t	version;	/**< Firmware version */
+	eepAddr_t			eepromSize;	/**< EEPROM Size */
+	colour_t			colour;		/**< Current RGB value */
+	rgbled_settings_t	settings;	/**< Other settings */
+}rgbled_t;
 
 #if defined(__cplusplus)
 extern "C" {
@@ -63,47 +64,54 @@ extern "C" {
 *
 * @return (none)
 */
-void rgbledctrl_init(void);
+void rgbled_init(void);
+
+/**
+* Shutdown library
+*
+* @return (none)
+*/
+void rgbled_exit(void);
 
 /**
 * Update list of RGB LED controllers, should be called before opening devices.
 *
 * @return Number of RGB LED controllers found.
 */
-uint rgbledctrl_find(void);
+uint32_t rgbled_find(void);
 
 /**
-* Checks to see if two handles are handles for the same device.
+* Checks to see if two RGB LED devices are of the same physical device.
 *
-* @param [handle1] Handle 1
-* @param [handle2] Handle 2
-* @return true if they are handles for the same device, otherwise false
+* @param [dev1] RGB LED Device 1
+* @param [dev2] RGB LED Device 2
+* @return true if they are the same physical device, otherwise false
 */
-bool rgbledctrl_sameDevice(usb_dev_handle* handle1, usb_dev_handle* handle2);
+bool rgbled_sameDevice(rgbled_t* dev1, rgbled_t* dev2);
 
 /**
 * Open whatever device is found first.
 *
-* @return s_rgbled_device pointer if successful, NULL pointer if failed
+* @return rgbled_t pointer if successful, NULL pointer if failed
 */
-s_rgbled_device* rgbledctrl_open(void);
+rgbled_t* rgbled_open(void);
 
 /**
 * Open device using its position/index in the list of devices found by rgbledctrl_find().
 *
 * @param [idx] Index
-* @return s_rgbled_device pointer if successful, NULL pointer if failed
+* @return rgbled_t pointer if successful, NULL pointer if failed
 */
-s_rgbled_device* rgbledctrl_open_byIndex(uint idx);
+rgbled_t* rgbled_open_byIndex(uint32_t idx);
 
 /**
 * Open device that has the specified value at the specified EEPROM address.
 *
 * @param [value] Value to check for
 * @param [address] EEPROM address to look at
-* @return s_rgbled_device pointer if successful, NULL pointer if failed
+* @return rgbled_t pointer if successful, NULL pointer if failed
 */
-s_rgbled_device* rgbledctrl_open_byEEPROM(byte value, eepAddr_t address);
+rgbled_t* rgbled_open_byEEPROM(uint8_t value, eepAddr_t address);
 
 /**
 * Close device.
@@ -111,7 +119,7 @@ s_rgbled_device* rgbledctrl_open_byEEPROM(byte value, eepAddr_t address);
 * @param [device] Device to operate on
 * @return (none)
 */
-void rgbledctrl_close(s_rgbled_device* device);
+void rgbled_close(rgbled_t* device);
 
 /**
 * Check if the device is still connected.
@@ -120,7 +128,7 @@ void rgbledctrl_close(s_rgbled_device* device);
 * @return true if connected, false if not
 * @todo Optional auto-reconnect
 */
-bool rgbledctrl_poke(s_rgbled_device* device);
+bool rgbled_poke(rgbled_t* device);
 
 /**
 * Reset device (makes the watchdog timer timeout).
@@ -128,7 +136,7 @@ bool rgbledctrl_poke(s_rgbled_device* device);
 * @param [device] Device to operate on
 * @return true on success, false on failure
 */
-bool rgbledctrl_reset(s_rgbled_device* device);
+bool rgbled_reset(rgbled_t* device);
 
 /**
 * Set idle time. Idle time is how long the controller waits (in seconds) before fading out the LEDs when there is no USB activity. RGBLED_IDLETIME_DISABLE = Disabled.
@@ -137,16 +145,16 @@ bool rgbledctrl_reset(s_rgbled_device* device);
 * @param [time] Timeout
 * @return true on success, false on failure
 */
-bool rgbledctrl_setIdleTime(s_rgbled_device* device, byte time);
+bool rgbled_setIdleTime(rgbled_t* device, uint8_t time);
 
 /**
 * Set red, green and blue brightnesses in one go
 *
 * @param [device] Device to operate on
-* @param [colour] Pointer to s_rgbVal structure
+* @param [colour] Pointer to colour_t structure
 * @return true on success, false on failure
 */
-bool rgbledctrl_setRGB(s_rgbled_device* device, s_rgbVal* colour);
+bool rgbled_setRGB(rgbled_t* device, colour_t* colour);
 
 /**
 * Set red brightness
@@ -155,7 +163,7 @@ bool rgbledctrl_setRGB(s_rgbled_device* device, s_rgbVal* colour);
 * @param [value] Brightness
 * @return true on success, false on failure
 */
-bool rgbledctrl_setR(s_rgbled_device* device, byte value);
+bool rgbled_setR(rgbled_t* device, uint8_t value);
 
 /**
 * Set green brightness
@@ -164,7 +172,7 @@ bool rgbledctrl_setR(s_rgbled_device* device, byte value);
 * @param [value] Brightness
 * @return true on success, false on failure
 */
-bool rgbledctrl_setG(s_rgbled_device* device, byte value);
+bool rgbled_setG(rgbled_t* device, uint8_t value);
 
 /**
 * Set blue brightness
@@ -173,7 +181,7 @@ bool rgbledctrl_setG(s_rgbled_device* device, byte value);
 * @param [value] Brightness
 * @return true on success, false on failure
 */
-bool rgbledctrl_setB(s_rgbled_device* device, byte value);
+bool rgbled_setB(rgbled_t* device, uint8_t value);
 
 /**
 * Write to device EEPROM
@@ -183,7 +191,7 @@ bool rgbledctrl_setB(s_rgbled_device* device, byte value);
 * @param [address] EEPROM address to write to
 * @return true on success, false on failure
 */
-bool rgbledctrl_eeprom_write(s_rgbled_device* device, byte data, eepAddr_t address);
+bool rgbled_eeprom_write(rgbled_t* device, uint8_t data, eepAddr_t address);
 
 /**
 * Read device EEPROM
@@ -193,17 +201,17 @@ bool rgbledctrl_eeprom_write(s_rgbled_device* device, byte data, eepAddr_t addre
 * @param [address] EEPROM address to read
 * @return true on success, false on failure
 */
-bool rgbledctrl_eeprom_read(s_rgbled_device* device, byte* data, eepAddr_t address);
+bool rgbled_eeprom_read(rgbled_t* device, uint8_t* data, eepAddr_t address);
 
 #if defined(__cplusplus)
 }
 #endif
 
-#if defined(__cplusplus) || defined(DOXYGEN)
+#if defined(__cplusplus) || defined(DOXYGEN) // __DOXYGEN__ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 /** @class rgbledctrl
 * @brief C++ Wrapper class for C library
 */
-class rgbledctrl
+class rgbled
 {
 public:
 /**
@@ -214,30 +222,37 @@ public:
 	static void init();
 
 /**
+* Shutdown library
+*
+* @return (none)
+*/
+	static void exit();
+
+/**
 * Update list of RGB LED controllers, should be called before opening devices.
 *
 * @return Number of RGB LED controllers found.
 */
-	static uint find();
+	static uint32_t find();
 
 /**
 * Checks to see if two handles are handles for the same device.
 *
-* @param [handle1] Handle 1
-* @param [handle2] Handle 2
-* @return true if they are handles for the same device, otherwise false
+* @param [dev1] RGB LED Device 1
+* @param [dev2] RGB LED Device 2
+* @return true if they are the same physical device, otherwise false
 */
-	static bool sameDevice(usb_dev_handle* handle1, usb_dev_handle* handle2);
+	static bool sameDevice(rgbled* dev1, rgbled* dev2);
 
 /**
 * 
 */
-	rgbledctrl();
+	rgbled();
 
 /**
 * Closes any handles.
 */
-	~rgbledctrl();
+	~rgbled();
 
 /**
 * Open whatever device is found first.
@@ -252,7 +267,7 @@ public:
 * @param [idx] Index
 * @return true on success, false on failure
 */
-	bool open(uint idx);
+	bool open(uint32_t idx);
 
 /**
 * Open device that has the specified value at the specified EEPROM address.
@@ -261,7 +276,7 @@ public:
 * @param [address] EEPROM address to look at
 * @return true on success, false on failure
 */
-	bool open(byte value, eepAddr_t address);
+	bool open(uint8_t value, eepAddr_t address);
 
 /**
 * Close device.
@@ -290,15 +305,15 @@ public:
 * @param [time] Timeout
 * @return true on success, false on failure
 */
-	bool setIdleTime(byte time);
+	bool setIdleTime(uint8_t time);
 
 /**
 * Set red, green and blue brightnesses in one go
 *
-* @param [colour] s_rgbVal structure
+* @param [colour] colour_t structure
 * @return true on success, false on failure
 */
-	bool setRGB(s_rgbVal& colour);
+	bool setRGB(colour_t& colour);
 
 /**
 * Set red brightness
@@ -306,7 +321,7 @@ public:
 * @param [value] Brightness
 * @return true on success, false on failure
 */
-	bool setR(byte value);
+	bool setR(uint8_t value);
 
 /**
 * Set green brightness
@@ -314,7 +329,7 @@ public:
 * @param [value] Brightness
 * @return true on success, false on failure
 */
-	bool setG(byte value);
+	bool setG(uint8_t value);
 
 /**
 * Set blue brightness
@@ -322,7 +337,7 @@ public:
 * @param [value] Brightness
 * @return true on success, false on failure
 */
-	bool setB(byte value);
+	bool setB(uint8_t value);
 
 /**
 * Write to device EEPROM
@@ -331,7 +346,7 @@ public:
 * @param [address] EEPROM address to write to
 * @return true on success, false on failure
 */
-	bool eeprom_write(byte data, eepAddr_t address);
+	bool eeprom_write(uint8_t data, eepAddr_t address);
 
 /**
 * Read device EEPROM
@@ -340,14 +355,14 @@ public:
 * @param [address] EEPROM address to read
 * @return true on success, false on failure
 */
-	bool eeprom_read(byte& data, eepAddr_t address);
+	bool eeprom_read(uint8_t& data, eepAddr_t address);
 
 /**
 *Controller firmware version
 *
-* @param [version] Byte[2] array to load data to
+* @param [version] rgbled_version_t struct to load data to
 */
-	void getVersion(byte (&version)[2]);
+	void getVersion(rgbled_version_t& version);
 
 /**
 *Available EEPROM space
@@ -357,23 +372,28 @@ public:
 /**
 *Current colour
 *
-* @param [colour] s_rgbVal structure to load colour to
+* @param [colour] colour_t structure to load colour to
 */
-	void getColour(s_rgbVal& colour);
+	void getColour(colour_t& colour);
 
 /**
 *Idle timeout (seconds)
 */
-	byte getIdleTime();
+	uint8_t getIdleTime();
 
 /**
-*LibUSB device handle
+*Device handle
 */
-	usb_dev_handle* getHandle();
+	void* getHandle();
+
+/**
+*blah
+*/
+	rgbled_t* getDevice();
 
 private:
-	s_rgbled_device* device;
+	rgbled_t* device;
 };
 #endif
 
-#endif /* RGBLEDCTRL_H_ */
+#endif /* RGBLED_H_ */

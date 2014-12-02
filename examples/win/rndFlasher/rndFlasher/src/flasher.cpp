@@ -9,6 +9,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
+#ifdef _WIN32
+#include "win.h"
+#endif
 #include "flasher.h"
 #include "rgbledCollection.h"
 #include "deviceFinder.h"
@@ -39,28 +42,24 @@ void flasher::begin()
 		// Find any new controllers and add to collection
 		deviceFinder::getNewDevices(rgbLeds);
 
-		for(uint i=0;i<rgbLeds->size();i++)
+		for(uint32_t i=0;i<rgbLeds->size();i++)
 		{
-			s_rgbVal colour;
-			colour.red = rand() % 2;
-			colour.green = rand() % 2;
-			colour.blue = rand() % 2;
-
-			colour.red *= 255;
-			colour.green *= 255;
-			colour.blue *= 255;
+			// Generate random colour
+			colour_t colour;
+			colour.r = rand();
+			colour.g = rand();
+			colour.b = rand();
 			
-			//colour.red = (byte)(pow(colour.red / 255.0, GAMMA_CORRECTION) * 255);
-			//colour.green = (byte)(pow(colour.green / 255.0, GAMMA_CORRECTION) * 255);
-			//colour.blue = (byte)(pow(colour.blue / 255.0, GAMMA_CORRECTION) * 255);
+			// Gamma correction
+			colour.r = (uint8_t)(pow(colour.r / 255.0, GAMMA_CORRECTION) * 255);
+			colour.g = (uint8_t)(pow(colour.g / 255.0, GAMMA_CORRECTION) * 255);
+			colour.b = (uint8_t)(pow(colour.b / 255.0, GAMMA_CORRECTION) * 255);
 
 			// Send colour
 			if(!rgbLeds->get(i)->setRGB(colour))
 			{
 				// If failed then remove controller from collection
-				rgbledctrl* rgbLed = rgbLeds->get(i);
-				rgbLeds->remove(i);
-				delete rgbLed;
+				rgbLeds->erase(i);
 				cout << "Device removed" << endl;
 			}
 		}

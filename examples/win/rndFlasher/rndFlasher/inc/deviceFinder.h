@@ -16,7 +16,7 @@ class deviceFinder
 public:
 	deviceFinder();
 	~deviceFinder();
-	static uint getNewDevices(rgbledCollection*);
+	static uint32_t getNewDevices(rgbledCollection*);
 
 private:
 

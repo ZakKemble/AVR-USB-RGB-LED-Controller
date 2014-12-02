@@ -7,7 +7,8 @@
  */
 
 #include "win.h"
-#include <rgbledctrl.h>
+#include <stdlib.h>
+#include <rgbled.h>
 #include "typedefs.h"
 #include "device.h"
 #include "mcu.h"
@@ -27,7 +28,7 @@ static s_device device;
 // Start threads and everything
 void device_init()
 {
-	rgbledctrl_init();
+	rgbled_init();
 	device.rgbled_device = NULL;
 
 	endThread			= false;
@@ -58,8 +59,8 @@ void device_end()
 // Open device then get additional data from EEPROM
 bool device_open()
 {
-	rgbledctrl_find();
-	device.rgbled_device = rgbledctrl_open();
+	rgbled_find();
+	device.rgbled_device = rgbled_open();
 	if(!device.rgbled_device)
 		return false;
 	getData();
@@ -68,7 +69,7 @@ bool device_open()
 
 void device_close()
 {
-	rgbledctrl_close(device.rgbled_device);
+	rgbled_close(device.rgbled_device);
 	device.rgbled_device = NULL;
 }
 
@@ -79,12 +80,12 @@ bool device_valid()
 
 bool device_poke()
 {
-	return rgbledctrl_poke(device.rgbled_device);
+	return rgbled_poke(device.rgbled_device);
 }
 
 void device_reset()
 {
-	rgbledctrl_reset(device.rgbled_device);
+	rgbled_reset(device.rgbled_device);
 }
 
 void device_setMode(byte mode)
@@ -102,9 +103,9 @@ void device_setMode(byte mode)
 	}
 }
 
-bool device_setColour(s_rgbVal* colour)
+bool device_setColour(colour_t* colour)
 {
-	return rgbledctrl_setRGB(device.rgbled_device, colour);
+	return rgbled_setRGB(device.rgbled_device, colour);
 }
 
 void device_setTransitionTime(uint16_t time)
@@ -126,17 +127,17 @@ void device_setBrightness(byte brightness)
 
 void device_setIdleTime(byte time)
 {
-	rgbledctrl_setIdleTime(device.rgbled_device, time);
+	rgbled_setIdleTime(device.rgbled_device, time);
 }
 
 bool device_eeprom_write(byte data, eepAddr_t address)
 {
-	return rgbledctrl_eeprom_write(device.rgbled_device, data, address);
+	return rgbled_eeprom_write(device.rgbled_device, data, address);
 }
 
 bool device_eeprom_read(byte* data, eepAddr_t address)
 {
-	return rgbledctrl_eeprom_read(device.rgbled_device, data, address);
+	return rgbled_eeprom_read(device.rgbled_device, data, address);
 }
 
 s_device* device_get()

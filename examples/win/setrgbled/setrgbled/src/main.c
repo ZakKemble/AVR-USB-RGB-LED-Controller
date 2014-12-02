@@ -15,15 +15,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <rgbledctrl.h>
+#include <rgbled.h>
 
 static void incArgIdx(int*, int);
 static int getArgVal(int*, int, char**, int);
 
 int main(int argc, char **argv)
 {
-	s_rgbVal colour;
+	colour_t colour;
 	bool getInfo					= false;
+	bool doPoke						= false;
+	bool doReset					= false;
 	bool setColour					= false;
 	bool setIdleTime				= false;
 	bool readEEPROM					= false;
@@ -47,7 +49,7 @@ int main(int argc, char **argv)
 			char* programName = argv[0];
 #endif
 
-			printf("Usage: %s [--help|-h] [getinfo] [colour <red> <green> <blue>] [idletime <time>] [eeprom r <address>] [eeprom w <address> <value>]\n", programName);
+			printf("Usage: %s [--help|-h] [poke] [reset] [getinfo] [colour <red> <green> <blue>] [idletime <time>] [eeprom r <address>] [eeprom w <address> <value>]\n", programName);
 			puts("");
 			puts("Examples:");
 			puts("");
@@ -61,14 +63,18 @@ int main(int argc, char **argv)
 			printf("%s eeprom r 5\n", programName);
 			exit(EXIT_SUCCESS);
 		}
+		else if(strcmp(argv[argIdx], "poke") == 0)
+			doPoke = true;
+		else if(strcmp(argv[argIdx], "reset") == 0)
+			doReset = true;
 		else if(strcmp(argv[argIdx], "getinfo") == 0)
 			getInfo = true;
 		else if(strcmp(argv[argIdx], "colour") == 0)
 		{
 			setColour = true;
-			colour.red = getArgVal(&argIdx, argc, argv, 255);
-			colour.green = getArgVal(&argIdx, argc, argv, 255);
-			colour.blue = getArgVal(&argIdx, argc, argv, 255);
+			colour.r = getArgVal(&argIdx, argc, argv, 255);
+			colour.g = getArgVal(&argIdx, argc, argv, 255);
+			colour.b = getArgVal(&argIdx, argc, argv, 255);
 		}
 		else if(strcmp(argv[argIdx], "idletime") == 0)
 		{
@@ -98,17 +104,17 @@ int main(int argc, char **argv)
 	}
 
 	// Initialise
-	rgbledctrl_init();
+	rgbled_init();
 
 	// Find controllers
-	uint count = rgbledctrl_find();
+	uint32_t count = rgbled_find();
 	printf("RGB LED Controllers found: %d\n", count);
 
 	// Loop over found controllers
-	for(uint i=0;i<count;i++)
+	for(uint32_t i=0;i<count;i++)
 	{
 		printf("Opening device (Index: %u)\n", i);
-		s_rgbled_device* rgbLed = rgbledctrl_open_byIndex(i); // Try opening
+		rgbled_t* rgbLed = rgbled_open_byIndex(i); // Try opening
 
 		if(!rgbLed) // Failed to open
 		{
@@ -121,44 +127,82 @@ int main(int argc, char **argv)
 		if(getInfo)
 		{
 			// Version
-			printf("Firmware version: %hhu.%hhu\n", rgbLed->version[0], rgbLed->version[1]);
+			printf("Firmware version: %hhu.%hhu\n", rgbLed->version.major, rgbLed->version.minor);
 
 			// User EEPROM size
 			printf("User EEPROM size: %hu bytes\n", rgbLed->eepromSize);
 
 			// Colour
-			printf("Current colour:\nRed: %hhu\nGreen: %hhu\nBlue: %hhu\n", rgbLed->rgb.red, rgbLed->rgb.green, rgbLed->rgb.blue);
+			printf("Current colour:\nRed: %hhu\nGreen: %hhu\nBlue: %hhu\n", rgbLed->colour.r, rgbLed->colour.g, rgbLed->colour.b);
 
 			// Idle time
 			printf("Idle time: %hhu\n", rgbLed->settings.idleTime);
 		}
 
+		if(doPoke)
+		{
+			if(rgbled_poke(rgbLed))
+				puts("Poked");
+			else
+				puts("Poke failed");
+		}
+
+		if(doReset)
+		{
+			if(rgbled_reset(rgbLed))
+				puts("Reset done");
+			else
+				puts("Reset failed");
+		}
+
 		// Set colour
 		if(setColour)
-			rgbledctrl_setRGB(rgbLed, &colour);
+		{
+			/*while(1)
+			{
+				Sleep(20);
+				colour.r++;
+				printf("R: %hhu\n", colour.r);
+				rgbledctrl_setRGB(rgbLed, &colour);
+			}*/
+			if(rgbled_setRGB(rgbLed, &colour))
+				printf("Colour set to %hhu %hhu %hhu\n", colour.r, colour.g, colour.b);
+			else
+				puts("Colour set failed");
+
+		}
 
 		// Set idle time
 		if(setIdleTime)
-			rgbledctrl_setIdleTime(rgbLed, idleTime);
+			rgbled_setIdleTime(rgbLed, idleTime);
 
 		// Read EEPROM
 		if(readEEPROM)
 		{
-			byte data;
-			if(rgbledctrl_eeprom_read(rgbLed, &data, readEEPROMAddress))
-				printf("%hhu", data);
+			byte data = 123;
+			if(rgbled_eeprom_read(rgbLed, &data, readEEPROMAddress))
+				printf("EEPROM Data @ %hu: %hhu\n", readEEPROMAddress, data);
+			else
+				puts("Failed to read EEPROM");
 		}
 
 		// Write EEPROM
 		if(writeEEPROM)
-			rgbledctrl_eeprom_write(rgbLed, writeEEPROMData, writeEEPROMAddress);
+		{
+			if(rgbled_eeprom_write(rgbLed, writeEEPROMData, writeEEPROMAddress))
+				printf("Wrote value %hhu to EEPROM address %hu\n", writeEEPROMData, writeEEPROMAddress);
+			else
+				puts("Failed to write EEPROM");
+		}
 
 		// Close USB handle
-		rgbledctrl_close(rgbLed);
+		rgbled_close(rgbLed);
 		rgbLed = NULL;
 
 		printf("Device closed (Index: %u)\n", i);
 	}
+
+	rgbled_exit();
 
 	return EXIT_SUCCESS;
 }

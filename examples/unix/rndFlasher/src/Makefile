@@ -28,7 +28,8 @@ LDFLAGS= \
 	-s
 
 LDLIBS= \
-	-lrgbledctrl \
+	-lhidapi-libusb \
+	-lrgbled \
 	-lstdc++
 
 EXECUTABLE=rndflasher
@@ -42,7 +43,7 @@ OBJECTS=$(TMP:.c=.o)
 all: $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) -o $@
+	$(CC) $(LDFLAGS) $(OBJECTS) $(LDLIBS) -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@

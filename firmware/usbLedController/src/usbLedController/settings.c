@@ -6,26 +6,23 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#include <avr/eeprom.h>
 #include "common.h"
-#include "settings.h"
-#include "leds.h"
 
 #define SAVE_DELAY_TIME	4000
 #define TIMER_COUNT	2
 
-static const s_settings eepSettings EEMEM = {
+static settings_t eepSettings EEMEM = {
 	5	// Idle time
 };
 
-static const s_rgbVal eepRgbVal EEMEM = {
+static colour_t eepRgbVal EEMEM = {
 	0,	// Red
 	0,	// Green
 	255	// Blue
 };
 
-static s_settings settings;
-static s_timer eepSave[TIMER_COUNT];
+static settings_t settings;
+static timer_t eepSave[TIMER_COUNT];
 
 static void load(void);
 static void save(byte);
@@ -52,7 +49,7 @@ void settings_update()
 	}
 }
 
-s_settings* settings_get()
+settings_t* settings_get()
 {
 	return &settings;
 }
@@ -65,8 +62,8 @@ void settings_startTimer(byte timer)
 
 static void load()
 {
-	eeprom_read_block(&settings, &eepSettings, sizeof(s_settings));
-	eeprom_read_block(leds_colour(), &eepRgbVal, sizeof(s_rgbVal));
+	eeprom_read_block(&settings, &eepSettings, sizeof(settings_t));
+	eeprom_read_block(leds_colour(), &eepRgbVal, sizeof(colour_t));
 }
 
 static void save(byte data)
@@ -74,10 +71,10 @@ static void save(byte data)
 	switch(data)
 	{
 		case SAVE_SETTINGS:
-			eeprom_update_block(&settings, (s_settings*)&eepSettings, sizeof(s_settings));
+			eeprom_update_block(&settings, (settings_t*)&eepSettings, sizeof(settings_t));
 			break;
 		case SAVE_RGB:
-			eeprom_update_block(leds_colour(), (s_rgbVal*)&eepRgbVal, sizeof(s_rgbVal));
+			eeprom_update_block(leds_colour(), (colour_t*)&eepRgbVal, sizeof(colour_t));
 			break;
 	}
 }

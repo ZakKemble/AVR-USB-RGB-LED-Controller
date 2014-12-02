@@ -7,7 +7,7 @@
  */
 
 #include <stdlib.h>
-#include <rgbledctrl.h>
+#include <rgbled.h>
 #include <time.h>
 #include "flasher.h"
 
@@ -22,13 +22,15 @@ int main(int argc, char **argv)
 	srand(time(NULL));
 
 	// Init
-	rgbledctrl::init();
+	rgbled::init();
 
 	// New flasher
 	flasher* Flasher = new flasher();
 	Flasher->begin();
 
 	delete Flasher;
+
+	rgbled::exit();
 
 	return EXIT_SUCCESS;
 }

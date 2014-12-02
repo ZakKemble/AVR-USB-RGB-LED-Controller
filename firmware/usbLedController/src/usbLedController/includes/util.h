@@ -9,8 +9,10 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#include "typedefs.h"
-#include <avr/sfr_defs.h>
+#define UNUSED(var) ((void)(var))
+#define EMPTY_FUNC	((void)(0))
+
+#define noinline __attribute__ ((__noinline__))
 
 #define delay(ms) _delay_ms(ms)
 #define delay_us(us) _delay_us(us)

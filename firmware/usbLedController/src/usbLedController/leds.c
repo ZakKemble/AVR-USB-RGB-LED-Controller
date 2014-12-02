@@ -6,11 +6,7 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#include <avr/io.h>
-#include <avr/power.h>
-#include <avr/pgmspace.h>
 #include "common.h"
-#include "leds.h"
 
 #define LED_RED		B4
 #define LED_GREEN	B1
@@ -19,7 +15,7 @@
 #define LED_GREEN_PWM	OCR0B
 #define LED_BLUE_PWM	OCR0A
 
-static s_rgbVal colour;
+static colour_t colour;
 
 static void setRed(void);
 static void setGreen(void);
@@ -34,7 +30,7 @@ void leds_init()
 	leds_setColour(0, 0, 0);
 }
 
-s_rgbVal* leds_colour()
+colour_t* leds_colour()
 {
 	return &colour;
 }
@@ -48,9 +44,9 @@ void leds_apply()
 
 void leds_setColour(byte r, byte g, byte b)
 {
-	colour.red = r;
-	colour.green = g;
-	colour.blue = b;
+	colour.r = r;
+	colour.g = g;
+	colour.b = b;
 	leds_apply();
 }
 
@@ -58,7 +54,7 @@ static void setRed()
 {
 	// Timer1 is only used for red, turn it off when not needed.
 
-	byte brightness = colour.red;
+	byte brightness = colour.r;
 	if(brightness == 0 || brightness == 255)
 	{
 		if(brightness == 0)
@@ -78,7 +74,7 @@ static void setRed()
 
 static void setGreen()
 {
-	byte brightness = colour.green;
+	byte brightness = colour.g;
 	if(brightness == 0 || brightness == 255)
 	{
 		if(brightness == 0)
@@ -96,7 +92,7 @@ static void setGreen()
 
 static void setBlue()
 {
-	byte brightness = colour.blue;
+	byte brightness = colour.b;
 	if(brightness == 0 || brightness == 255)
 	{
 		if(brightness == 0)

@@ -36,7 +36,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug.16836289" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.exe.debug">
 								<option id="gnu.c.link.option.libs.603265503" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="Shlwapi"/>
-									<listOptionValue builtIn="false" value="rgbledctrl"/>
+									<listOptionValue builtIn="false" value="rgbled"/>
 								</option>
 								<option id="gnu.c.link.option.userobjs.759122729" name="Other objects" superClass="gnu.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Debug/src/resource.o}&quot;"/>
@@ -88,7 +88,7 @@
 								<option id="gnu.c.link.option.strip.877728147" name="Omit all symbol information (-s)" superClass="gnu.c.link.option.strip" value="true" valueType="boolean"/>
 								<option id="gnu.c.link.option.libs.1627511397" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="Shlwapi"/>
-									<listOptionValue builtIn="false" value="rgbledctrl"/>
+									<listOptionValue builtIn="false" value="rgbled"/>
 								</option>
 								<option id="gnu.c.link.option.userobjs.325092717" name="Other objects" superClass="gnu.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Release/src/resource.o}&quot;"/>

@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include <vector>
-#include <rgbledctrl.h>
+#include <rgbled.h>
 #include "rgbledCollection.h"
 
 using namespace std;
@@ -32,42 +32,50 @@ void rgbledCollection::clear()
 }
 
 // Add an RGB LED
-void rgbledCollection::add(rgbledctrl* rgbLed)
+void rgbledCollection::add(rgbled* rgbLed)
 {
 	rgbLeds.push_back(rgbLed);
 }
 
-// Remove an RGB LED
-void rgbledCollection::remove(uint idx)
+// Remove an RGB LED from list
+void rgbledCollection::remove(uint32_t idx)
 {
 	rgbLeds.erase(rgbLeds.begin() + idx);
 }
 
+// Remove an RGB LED from list then delete the object
+void rgbledCollection::erase(uint32_t idx)
+{
+	rgbled* rgbLed = get(idx);
+	remove(idx);
+	delete rgbLed;
+}
+
 // Get an RGB LED
-rgbledctrl* rgbledCollection::get(uint idx)
+rgbled* rgbledCollection::get(uint32_t idx)
 {
 	return rgbLeds.at(idx);
 }
 
 // Get number of RGB LEDs
-uint rgbledCollection::size()
+uint32_t rgbledCollection::size()
 {
 	return rgbLeds.size();
 }
 
 // Go through RGB LEDs and see if one of the USB handles is a handle to the same device as the handle for the passed RGB LED
-bool rgbledCollection::has(rgbledctrl* rgbLed)
+bool rgbledCollection::has(rgbled* rgbLed)
 {
-	for(uint i=0;i<size();i++)
+	for(uint32_t i=0;i<size();i++)
 	{
-		if(rgbledctrl::sameDevice(rgbLeds.at(i)->getHandle(), rgbLed->getHandle()))
+		if(rgbled::sameDevice(rgbLeds.at(i), rgbLed))
 			return true;
 	}
 	return false;
 }
 
 // Print info about an RGB LED
-void rgbledCollection::print(uint idx)
+void rgbledCollection::print(uint32_t idx)
 {
 	cout << "------" << endl;
 	if(idx >= rgbLeds.size())
@@ -78,18 +86,18 @@ void rgbledCollection::print(uint idx)
 
 	cout << "Device number: " << idx << endl;
 
-	rgbledctrl* rgbLed = rgbLeds.at(idx);
+	rgbled* rgbLed = rgbLeds.at(idx);
 
 	//
-	byte version[2];
+	rgbled_version_t version;
 	rgbLed->getVersion(version);
-	cout << "\t" << "Firmware version: " << (int)version[0] << "." << (int)version[1] << endl;
+	cout << "\t" << "Firmware version: " << (int)version.major << "." << (int)version.minor << endl;
 
 	//
 	cout << "\t" << "EEPROM size: " << rgbLed->getEepromSize() << endl;
 
 	//
-	s_rgbVal colour;
+	colour_t colour;
 	rgbLed->getColour(colour);
-	cout << "\t" << "Current colour: " << (int)colour.red << " " << (int)colour.green << " " << (int)colour.blue << endl;
+	cout << "\t" << "Current colour: " << (int)colour.r << " " << (int)colour.g << " " << (int)colour.b << endl;
 }

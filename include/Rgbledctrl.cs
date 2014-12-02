@@ -10,12 +10,12 @@ using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace LibRgbLedCtrl
+namespace LibRgbLed
 {
     /// <summary>
     /// C# .NET Wrapper class for C library
     /// </summary>
-    class Rgbledctrl : IDisposable
+    class Rgbled : IDisposable
     {
         /// <summary>
         /// Disable LED fade when no USB activity.
@@ -23,28 +23,35 @@ namespace LibRgbLedCtrl
         public const byte RGBLED_IDLETIME_DISABLE = 0;
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct s_rgbVal
+        private struct colour_t
         {
-            public byte red;
-            public byte green;
-            public byte blue;
+            public byte r;
+            public byte g;
+            public byte b;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct s_rgbled_deviceSettings
+        private struct rgbled_settings_t
         {
             public byte idleTime;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct rgbled_version_t
+        {
+            public byte major;
+			public byte minor;
+        }
+
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private struct s_rgbled_device
+        private struct rgbled_device_t
         {
             public IntPtr handle; // libUSB handle
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)] // version is always 2 bytes
-            public byte[] version;
+            public IntPtr path;
+            public rgbled_version_t version;
             public ushort eepromSize;
-            public s_rgbVal rgb;
-            public s_rgbled_deviceSettings settings;
+            public colour_t colour;
+            public rgbled_settings_t settings;
         }
 
         private IntPtr devicePtr;
@@ -52,9 +59,14 @@ namespace LibRgbLedCtrl
         /// <summary>
         /// Controller firmware version
         /// </summary>
-        public byte[] version
+        public Version version
         {
-            get { return getStruct().version; }
+            get
+            {
+                rgbled_device_t dev = getStruct();
+                Version version = new Version(dev.version.major, dev.version.minor);
+                return version;
+            }
         }
 
         /// <summary>
@@ -72,8 +84,8 @@ namespace LibRgbLedCtrl
         {
             get
             {
-                s_rgbVal rgb = getStruct().rgb;
-                return Color.FromArgb(0, rgb.red, rgb.green, rgb.blue);
+                colour_t colour = getStruct().colour;
+                return Color.FromArgb(0, colour.r, colour.g, colour.b);
             }
         }
 
@@ -93,15 +105,15 @@ namespace LibRgbLedCtrl
             get { return getStruct().handle; }
         }
 
-        private s_rgbled_device getStruct()
+        private rgbled_device_t getStruct()
         {
-            s_rgbled_device dev;
+            rgbled_device_t dev;
             if (devicePtr != IntPtr.Zero)
-                dev = (s_rgbled_device)Marshal.PtrToStructure(devicePtr, typeof(s_rgbled_device));
+                dev = (rgbled_device_t)Marshal.PtrToStructure(devicePtr, typeof(rgbled_device_t));
             else
             {
-                dev = new s_rgbled_device();
-                dev.version = new byte[2];
+                dev = new rgbled_device_t();
+                dev.version = new rgbled_version_t();
             }
             return dev;
         }
@@ -109,7 +121,7 @@ namespace LibRgbLedCtrl
         /// <summary>
         /// Initialise stuff
         /// </summary>
-        public Rgbledctrl()
+        public Rgbled()
         {
             devicePtr = IntPtr.Zero;
         }
@@ -117,7 +129,7 @@ namespace LibRgbLedCtrl
         /// <summary>
         /// Deal with unmanaged memory
         /// </summary>
-        ~Rgbledctrl()
+        ~Rgbled()
         {
             Dispose();
         }
@@ -127,7 +139,11 @@ namespace LibRgbLedCtrl
         /// </summary>
         public void Dispose()
         {
+            // http://stackoverflow.com/questions/538060/proper-use-of-the-idisposable-interface
+            //Win32.DestroyHandle(devicePtr);
+
             close();
+			exit();
             GC.SuppressFinalize(this);
         }
 
@@ -136,7 +152,15 @@ namespace LibRgbLedCtrl
         /// </summary>
         public static void init()
         {
-            rgbledctrl_init();
+            rgbled_init();
+        }
+
+        /// <summary>
+        /// blah
+        /// </summary>
+        public static void exit()
+        {
+            rgbled_exit();
         }
 
         /// <summary>
@@ -145,18 +169,18 @@ namespace LibRgbLedCtrl
         /// <returns>Number of RGB LED controllers found.</returns>
         public static uint find()
         {
-            return rgbledctrl_find();
+            return rgbled_find();
         }
 
         /// <summary>
-        /// Checks to see if two handles are handles for the same device
+        /// Checks to see if two devices are of the same physical device
         /// </summary>
-        /// <param name="handle1">Device handle 1</param>
-        /// <param name="handle2">Device handle 2</param>
-        /// <returns>true if they are handles for the same device, otherwise false</returns>
-        public static bool sameDevice(IntPtr handle1, IntPtr handle2)
+        /// <param name="handle1">Device 1</param>
+        /// <param name="handle2">Device 2</param>
+        /// <returns>true if they are the same physical device, otherwise false</returns>
+        public static bool sameDevice(Rgbled dev1, Rgbled dev2)
         {
-            return rgbledctrl_sameDevice(handle1, handle2);
+            return rgbled_sameDevice(dev1.handle, dev2.handle);
         }
 
         /// <summary>
@@ -165,7 +189,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool open()
         {
-            devicePtr = rgbledctrl_open();
+            devicePtr = rgbled_open();
             return devicePtr != IntPtr.Zero;
         }
 
@@ -176,7 +200,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool open(uint idx)
         {
-            devicePtr = rgbledctrl_open_byIndex(idx);
+            devicePtr = rgbled_open_byIndex(idx);
             return devicePtr != IntPtr.Zero;
         }
 
@@ -188,7 +212,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool open(byte value, ushort address)
         {
-            devicePtr = rgbledctrl_open_byEEPROM(value, address);
+            devicePtr = rgbled_open_byEEPROM(value, address);
             return devicePtr != IntPtr.Zero;
         }
 
@@ -197,7 +221,7 @@ namespace LibRgbLedCtrl
         /// </summary>
         public void close()
         {
-            rgbledctrl_close(devicePtr);
+            rgbled_close(devicePtr);
             devicePtr = IntPtr.Zero;
         }
 
@@ -207,7 +231,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool poke()
         {
-            return rgbledctrl_poke(devicePtr);
+            return rgbled_poke(devicePtr);
         }
 
         /// <summary>
@@ -216,7 +240,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool reset()
         {
-            return rgbledctrl_reset(devicePtr);
+            return rgbled_reset(devicePtr);
         }
 
         /// <summary>
@@ -226,7 +250,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool setIdleTime(byte time)
         {
-            return rgbledctrl_setIdleTime(devicePtr, time);
+            return rgbled_setIdleTime(devicePtr, time);
         }
 
         /// <summary>
@@ -236,11 +260,11 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool setRGB(Color colour)
         {
-            s_rgbVal rgb;
-            rgb.red = colour.R;
-            rgb.green = colour.G;
-            rgb.blue = colour.B;
-            return rgbledctrl_setRGB(devicePtr, ref rgb);
+            colour_t _colour;
+            _colour.r = colour.R;
+            _colour.g = colour.G;
+            _colour.b = colour.B;
+            return rgbled_setRGB(devicePtr, ref _colour);
         }
 
         /// <summary>
@@ -250,7 +274,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool setR(byte value)
         {
-            return rgbledctrl_setR(devicePtr, value);
+            return rgbled_setR(devicePtr, value);
         }
 
         /// <summary>
@@ -260,7 +284,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool setG(byte value)
         {
-            return rgbledctrl_setG(devicePtr, value);
+            return rgbled_setG(devicePtr, value);
         }
 
         /// <summary>
@@ -270,7 +294,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool setB(byte value)
         {
-            return rgbledctrl_setB(devicePtr, value);
+            return rgbled_setB(devicePtr, value);
         }
 
         /// <summary>
@@ -281,7 +305,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool eeprom_write(byte data, ushort address)
         {
-            return rgbledctrl_eeprom_write(devicePtr, data, address);
+            return rgbled_eeprom_write(devicePtr, data, address);
         }
 
         /// <summary>
@@ -292,7 +316,7 @@ namespace LibRgbLedCtrl
         /// <returns>true on success, false on failure</returns>
         public bool eeprom_read(ref byte data, ushort address)
         {
-            return rgbledctrl_eeprom_read(devicePtr, ref data, address);
+            return rgbled_eeprom_read(devicePtr, ref data, address);
         }
 
 
@@ -300,62 +324,65 @@ namespace LibRgbLedCtrl
         // Library import stuff
         //
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_init")]
-        private static extern void rgbledctrl_init();
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_init")]
+        private static extern void rgbled_init();
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_find")]
-        private static extern uint rgbledctrl_find();
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_exit")]
+        private static extern void rgbled_exit();
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_sameDevice")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_find")]
+        private static extern uint rgbled_find();
+
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_sameDevice")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_sameDevice(IntPtr handle1, IntPtr handle2);
+        private static extern bool rgbled_sameDevice(IntPtr handle1, IntPtr handle2);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_open")]
-        private static extern IntPtr rgbledctrl_open();
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_open")]
+        private static extern IntPtr rgbled_open();
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_open_byIndex")]
-        private static extern IntPtr rgbledctrl_open_byIndex(uint index);
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_open_byIndex")]
+        private static extern IntPtr rgbled_open_byIndex(uint index);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_open_byEEPROM")]
-        private static extern IntPtr rgbledctrl_open_byEEPROM(byte value, ushort address);
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_open_byEEPROM")]
+        private static extern IntPtr rgbled_open_byEEPROM(byte value, ushort address);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_close")]
-        private static extern void rgbledctrl_close(IntPtr device);
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_close")]
+        private static extern void rgbled_close(IntPtr device);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_poke")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_poke")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_poke(IntPtr device);
+        private static extern bool rgbled_poke(IntPtr device);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_reset")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_reset")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_reset(IntPtr device);
+        private static extern bool rgbled_reset(IntPtr device);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_setIdleTime")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_setIdleTime")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_setIdleTime(IntPtr device, byte value);
+        private static extern bool rgbled_setIdleTime(IntPtr device, byte value);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_setRGB")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_setRGB")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_setRGB(IntPtr device, ref s_rgbVal rgbVal);
+        private static extern bool rgbled_setRGB(IntPtr device, ref colour_t colour);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_setR")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_setR")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_setR(IntPtr device, byte value);
+        private static extern bool rgbled_setR(IntPtr device, byte value);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_setG")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_setG")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_setG(IntPtr device, byte value);
+        private static extern bool rgbled_setG(IntPtr device, byte value);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_setB")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_setB")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_setB(IntPtr device, byte value);
+        private static extern bool rgbled_setB(IntPtr device, byte value);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_eeprom_write")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_eeprom_write")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_eeprom_write(IntPtr device, byte value, ushort address);
+        private static extern bool rgbled_eeprom_write(IntPtr device, byte value, ushort address);
 
-        [DllImport("librgbledctrl", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbledctrl_eeprom_read")]
+        [DllImport("librgbled", CallingConvention = CallingConvention.Cdecl, EntryPoint = "rgbled_eeprom_read")]
         [return: MarshalAs(UnmanagedType.I1)]
-        private static extern bool rgbledctrl_eeprom_read(IntPtr device, ref byte value, ushort address);
+        private static extern bool rgbled_eeprom_read(IntPtr device, ref byte value, ushort address);
     }
 }

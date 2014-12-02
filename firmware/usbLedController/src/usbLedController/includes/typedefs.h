@@ -9,8 +9,6 @@
 #ifndef TYPEDEFS_H_
 #define TYPEDEFS_H_
 
-#include <stdbool.h>
-
 typedef unsigned char byte;
 typedef unsigned int uint;
 typedef unsigned long ulong;
@@ -18,18 +16,18 @@ typedef unsigned long ulong;
 typedef uint16_t eepAddr_t;
 
 typedef struct{
-	byte red;
-	byte green;
-	byte blue;
-}s_rgbVal;
+	byte r;
+	byte g;
+	byte b;
+}colour_t;
 
 typedef struct{
 	byte idleTime;
-}s_settings;
+}settings_t;
 
 typedef struct{
 	bool enabled;
 	uint counter;
-}s_timer;
+}timer_t;
 
 #endif /* TYPEDEFS_H_ */

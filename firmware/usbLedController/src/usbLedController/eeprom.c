@@ -12,7 +12,7 @@
 
 // EEPROM stuff for reading and writing over USB
 
-static const byte eepUserData[EEPROM_USER_SIZE] EEMEM = {0x00};
+static byte eepUserData[EEPROM_USER_SIZE] EEMEM = {0x00};
 
 void eeprom_write(byte data, eepAddr_t address)
 {

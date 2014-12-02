@@ -39,7 +39,7 @@ static s_sample sample;
 static DWORD WINAPI mainThread(LPVOID);
 static byte getCPUUsage(void);
 static bool checkDevice(bool);
-static void getCPUColour(byte, s_rgbVal*);
+static void getCPUColour(byte, colour_t*);
 static byte getColour(byte, byte, byte, byte, byte);
 static void adjustColour(byte*);
 static byte getSineVal(byte);
@@ -94,7 +94,7 @@ void backend_setColour(byte r, byte g, byte b)
 	g = (byte)(pow(g / 255.0, GAMMA_CORRECTION) * 255);
 	b = (byte)(pow(b / 255.0, GAMMA_CORRECTION) * 255);
 
-	s_rgbVal colour = {r, g, b};
+	colour_t colour = {r, g, b};
 	device_setColour(&colour);
 }
 
@@ -180,7 +180,7 @@ static DWORD WINAPI mainThread(LPVOID args)
 			if(device_get()->ledMode == MODE_CPU_USAGE)
 			{
 				// Workout colour
-				s_rgbVal colour;
+				colour_t colour;
 				getCPUColour(cpuUsage, &colour);
 
 				// Send colour
@@ -247,21 +247,21 @@ static bool checkDevice(bool usbOk)
 	return true;
 }
 
-static void getCPUColour(byte cpuUsage, s_rgbVal* colour)
+static void getCPUColour(byte cpuUsage, colour_t* colour)
 {
 	// Workout colour
-	colour->red		= getColour(cpuUsage, 128, 255, MIN_RGB_LEVEL, MAX_RGB_LEVEL);
-	colour->blue	= getColour(cpuUsage, 0, 127, MAX_RGB_LEVEL, MIN_RGB_LEVEL);
+	colour->r		= getColour(cpuUsage, 128, 255, MIN_RGB_LEVEL, MAX_RGB_LEVEL);
+	colour->b		= getColour(cpuUsage, 0, 127, MAX_RGB_LEVEL, MIN_RGB_LEVEL);
 
 	if(cpuUsage < 128)
-		colour->green = getColour(cpuUsage, 0, 127, MIN_RGB_LEVEL, MAX_RGB_LEVEL);
+		colour->g	 = getColour(cpuUsage, 0, 127, MIN_RGB_LEVEL, MAX_RGB_LEVEL);
 	else
-		colour->green = getColour(cpuUsage, 128, 255, MAX_RGB_LEVEL, MIN_RGB_LEVEL);
+		colour->g	 = getColour(cpuUsage, 128, 255, MAX_RGB_LEVEL, MIN_RGB_LEVEL);
 
 	// Adjust colour (sine smooth, brightness)
-	adjustColour(&colour->red);
-	adjustColour(&colour->blue);
-	adjustColour(&colour->green);
+	adjustColour(&colour->r);
+	adjustColour(&colour->b);
+	adjustColour(&colour->g);
 }
 
 static byte getColour(byte cpuUsage, byte inMin, byte inMax, byte outMin, byte outMax)

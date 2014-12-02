@@ -6,10 +6,7 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#include <avr/wdt.h>
-#include <avr/interrupt.h>
 #include "common.h"
-#include "wdt.h"
 
 #if WDT_ENABLE
 

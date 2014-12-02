@@ -6,22 +6,10 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/wdt.h>
-#include <avr/power.h>
-#include <util/delay.h>
-#include <string.h>
 #include "common.h"
-#include "usbLedController.h"
-#include "usb.h"
-#include "leds.h"
-#include "settings.h"
-#include "wdt.h"
-#include "usbdrv/usbdrv.h"
 
 static volatile bool timerTick;
-static s_timer idle;
+static timer_t idle;
 static bool resetRequested;
 
 static void init(void);
@@ -41,8 +29,8 @@ int main(void)
 	init();
 
 	// Get saved colour
-	s_rgbVal colour;
-	memcpy(&colour, leds_colour(), sizeof(s_rgbVal));
+	colour_t colour;
+	memcpy(&colour, leds_colour(), sizeof(colour_t));
 
 	loadUSBOscCalibration();
 	usbDeviceDisconnect();
@@ -60,7 +48,7 @@ int main(void)
 	flashTest();
 
 	// Load back saved colour
-	memcpy(leds_colour(), &colour, sizeof(s_rgbVal));
+	memcpy(leds_colour(), &colour, sizeof(colour_t));
 	leds_apply();
 	
 	resetIdleTimer();
@@ -131,7 +119,7 @@ static void checkTimerTick()
 static void idleTimer()
 {
 	static byte fader;
-	s_settings* settings = settings_get();
+	settings_t* settings = settings_get();
 	if(settings->idleTime != IDLETIME_DISABLE)
 	{
 		idle.counter++;
@@ -146,13 +134,13 @@ static void idleTimer()
 			if(++fader > 15)
 			{
 				fader = 0;
-				s_rgbVal* leds = leds_colour();
-				if(leds->red > 0)
-					leds->red--;
-				if(leds->green > 0)
-					leds->green--;
-				if(leds->blue > 0)
-					leds->blue--;
+				colour_t* leds = leds_colour();
+				if(leds->r > 0)
+					leds->r--;
+				if(leds->g > 0)
+					leds->g--;
+				if(leds->b > 0)
+					leds->b--;
 				leds_apply();
 			}			
 		}

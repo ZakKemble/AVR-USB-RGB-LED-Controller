@@ -6,102 +6,259 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#include <avr/eeprom.h>
-#include <avr/interrupt.h>
 #include "common.h"
-#include "usb.h"
-#include "usbLedController.h"
-#include "settings.h"
-#include "leds.h"
-#include "eeprom.h"
-#include "usbdrv/usbdrv.h"
 
-#define USB_REQ_POKE		0
-#define USB_REQ_DEVSTATE	1
-#define USB_REQ_RESET		2
-#define USB_REQ_LED_RGB		3
-#define USB_REQ_LED_R		4
-#define USB_REQ_LED_G		5
-#define USB_REQ_LED_B		6
-#define USB_REQ_IDLETIME	7
-#define USB_REQ_EEP_WRITE	8
-#define USB_REQ_EEP_READ	9
+typedef enum
+{
+	USB_REP_POKE		= 1,
+	USB_REP_DEVINFO		= 2,
+	USB_REP_RESET		= 3,
+	USB_REP_LED_RGB		= 4,
+	USB_REP_LED_R		= 5,
+	USB_REP_LED_G		= 6,
+	USB_REP_LED_B		= 7,
+	USB_REP_IDLETIME	= 8,
+	USB_REP_EEP_SETUP	= 9,
+	USB_REP_EEP			= 10
+}usb_rep_t;
 
-static const byte eepCalibration EEMEM = 0xFF;
+#define VALUE_POKE	241
+#define VALUE_RESET	184
 
-static void getDeviceState(void);
+#define REPORT_SIZE	3 // Size of largest report
+
+// Host software HIDAPI stuff doesn't seem to like INPUT reports, would stop communicating with device after a few seconds
+
+PROGMEM const char usbHidReportDescriptor[105] = {    /* USB report descriptor */
+	0x06, 0x00, 0xff,              // USAGE_PAGE (Vendor Defined Page 1)
+	0x09, 0x00,                    // USAGE (Undefined)
+	0xa1, 0x01,                    // COLLECTION (Application)
+	0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+	0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
+	0x75, 0x08,                    //   REPORT_SIZE (8) (Bits per field)
+
+// POKE
+	0x95, 0x01,                    //   REPORT_COUNT (1) (Number of fields)
+	0x85, USB_REP_POKE,            //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// DEVINFO
+	0x95, 0x04,                    //   REPORT_COUNT
+	0x85, USB_REP_DEVINFO,         //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// RESET
+	0x95, 0x01,                    //   REPORT_COUNT (0)
+	0x85, USB_REP_RESET,           //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// LED_RGB
+	0x95, 0x03,                    //   REPORT_COUNT (3)
+	0x85, USB_REP_LED_RGB,         //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// LED_RED
+	0x95, 0x01,                    //   REPORT_COUNT (1)
+	0x85, USB_REP_LED_R,           //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// LED_GREEN
+	0x95, 0x01,                    //   REPORT_COUNT (1)
+	0x85, USB_REP_LED_G,           //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// LED_BLUE
+	0x95, 0x01,                    //   REPORT_COUNT (1)
+	0x85, USB_REP_LED_B,           //   REPORT_ID (7)
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// IDLETIME
+	0x95, 0x01,                    //   REPORT_COUNT (1)
+	0x85, USB_REP_IDLETIME,        //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// EEP_SETUP
+	0x95, 0x02,                    //   REPORT_COUNT (2)
+	0x85, USB_REP_EEP_SETUP,       //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+
+// EEP_WRITE/EEP_READ
+	0x95, 0x01,                    //   REPORT_COUNT (1)
+	0x85, USB_REP_EEP,             //   REPORT_ID
+	0x09, 0x00,                    //   USAGE (Undefined)
+	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
+	
+	0xc0                           // END_COLLECTION
+};
+
+static byte eepCalibration EEMEM = 0xFF;
+
 static void calibrateOscillator(void);
 
-USB_PUBLIC usbMsgLen_t usbFunctionSetup(uchar data[8])
-{
-	resetIdleTimer();
-
-	usbRequest_t* rq = (usbRequest_t*)data;
-	switch(rq->bRequest)
+typedef struct{
+	byte len; // Report length
+	byte idx; // Buffer index
+	union
 	{
-		case USB_REQ_LED_RGB:
-			leds_setColour(rq->wValue.bytes[0], rq->wValue.bytes[1], rq->wIndex.bytes[0]);
+		byte buffer[REPORT_SIZE + 1];
+		struct {
+			byte id; // Report ID
+			byte data[REPORT_SIZE]; // Report data
+		};
+	};
+}reportData_t;
+
+static eepAddr_t eepAddr;
+static reportData_t report;
+
+static void processRequest(void)
+{
+	switch(report.id)
+	{
+		case USB_REP_LED_RGB:
+			leds_setColour(report.data[0], report.data[1], report.data[2]);
 			settings_startTimer(SAVE_RGB);
 			break;
-		case USB_REQ_LED_R:
-		case USB_REQ_LED_G:
-		case USB_REQ_LED_B:
+		case USB_REP_LED_R:
+		case USB_REP_LED_G:
+		case USB_REP_LED_B:
 			{
-				byte val = rq->wValue.bytes[0];
-				s_rgbVal* colour = leds_colour();
-				switch(rq->bRequest)
+				byte val = report.data[0];
+				colour_t* colour = leds_colour();
+				switch(report.id)
 				{
-					case USB_REQ_LED_R:
-						colour->red = val;
+					case USB_REP_LED_R:
+						colour->r = val;
 						break;
-					case USB_REQ_LED_G:
-						colour->green = val;
+					case USB_REP_LED_G:
+						colour->g = val;
 						break;
-					case USB_REQ_LED_B:
-						colour->blue = val;
+					case USB_REP_LED_B:
+						colour->b = val;
+						break;
+					default:
 						break;
 				}
 				leds_apply();
 				settings_startTimer(SAVE_RGB);
 			}
 			break;
-		case USB_REQ_POKE:
-			break;
-		case USB_REQ_IDLETIME:
-			settings_get()->idleTime = rq->wValue.bytes[0];
+		case USB_REP_IDLETIME:
+			settings_get()->idleTime = report.data[0];
 			settings_startTimer(SAVE_SETTINGS);
 			break;
-		case USB_REQ_EEP_WRITE:
-			eeprom_write(rq->wValue.bytes[0], rq->wIndex.word);
+		case USB_REP_EEP_SETUP:
+			eepAddr = (report.data[0] | (report.data[1]<<8));
 			break;
-		case USB_REQ_EEP_READ:
-			usbMsgPtr = (usbMsgPtr_t)eeprom_read(rq->wIndex.word);
-			return 1;
-		case USB_REQ_DEVSTATE:
-			getDeviceState();
-			return 8;
-		case USB_REQ_RESET:
-			requestReset();
+		case USB_REP_EEP:
+			eeprom_write(report.data[0], eepAddr);
+			break;
+		case USB_REP_RESET:
+			if(report.data[0] == VALUE_RESET)
+				requestReset();
 			break;
 		default:
 			break;
 	}
-
-    return 0;
 }
 
-static void getDeviceState()
+uchar usbFunctionRead(uchar* data, uchar len)
 {
-	s_settings* settings = settings_get();
-	s_rgbVal* colour = leds_colour();
-	static byte stateData[8] = {USB_CFG_DEVICE_VERSION, EEPROM_USER_SIZE>>8, (byte)EEPROM_USER_SIZE};
-	stateData[4] = settings->idleTime;
-	stateData[5] = colour->red;
-	stateData[6] = colour->green;
-	stateData[7] = colour->blue;
-	usbMsgPtr = (usbMsgPtr_t)stateData;
+	UNUSED(data);
+	UNUSED(len);
+	return 0;
 }
 
+uchar usbFunctionWrite(uchar* data, uchar len)
+{
+	if(report.idx >= report.len)
+		return 1;
+
+	for(byte i=0;i<len;i++)
+	{
+		report.buffer[report.idx++] = data[i];
+		if(report.idx >= report.len)
+		{
+			processRequest();
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static usbMsgLen_t processGetReport(usb_rep_t _reportId, byte len)
+{
+	UNUSED(len);
+
+	switch(_reportId)
+	{
+		case USB_REP_DEVINFO:
+		{
+			static byte stateData[4] = {USB_CFG_DEVICE_VERSION, (byte)EEPROM_USER_SIZE, EEPROM_USER_SIZE>>8};
+			usbMsgPtr = (usbMsgPtr_t)stateData;
+			return sizeof(stateData);
+		}
+		case USB_REP_LED_RGB:
+			usbMsgPtr = (usbMsgPtr_t)leds_colour();
+			return sizeof(colour_t);
+		case USB_REP_IDLETIME:
+			usbMsgPtr = (usbMsgPtr_t)&settings_get()->idleTime;
+			return 1;
+		case USB_REP_EEP:
+			usbMsgPtr = (usbMsgPtr_t)eeprom_read(eepAddr);
+			return 1;
+		case USB_REP_POKE:
+		{
+			static byte pokeValue = VALUE_POKE;
+			usbMsgPtr = (usbMsgPtr_t)&pokeValue;
+			return 1;
+		}
+		default:
+			break;
+	}
+	return 0;
+}
+
+static usbMsgLen_t processSetReport(usb_rep_t _reportId, byte len)
+{
+	UNUSED(_reportId);
+
+	// len = Report data length + 1 for report ID
+
+	report.len = len;
+	report.idx = 0;
+
+	if(report.len > sizeof(report.buffer))
+		return 0;
+
+	return USB_NO_MSG;
+}
+
+USB_PUBLIC usbMsgLen_t usbFunctionSetup(uchar data[8])
+{
+	resetIdleTimer();
+	
+	usbRequest_t* rq = (usbRequest_t*)data;
+	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS)
+	{
+		if(rq->bRequest == USBRQ_HID_GET_REPORT)
+			return processGetReport(rq->wValue.bytes[0], rq->wLength.bytes[0]);
+		else if(rq->bRequest == USBRQ_HID_SET_REPORT)
+			return processSetReport(rq->wValue.bytes[0], rq->wLength.bytes[0]);
+	}
+
+	return 0;
+}
 
 
 

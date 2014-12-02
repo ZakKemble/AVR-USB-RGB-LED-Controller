@@ -7,7 +7,7 @@
  */
 
 #include <iostream>
-#include <rgbledctrl.h>
+#include <rgbled.h>
 #include "deviceFinder.h"
 #include "rgbledCollection.h"
 
@@ -23,16 +23,16 @@ deviceFinder::~deviceFinder()
 
 }
 
-uint deviceFinder::getNewDevices(rgbledCollection* rgbLeds)
+uint32_t deviceFinder::getNewDevices(rgbledCollection* rgbLeds)
 {
-	uint count = rgbledctrl::find();
+	uint32_t count = rgbled::find();
 	cout << "Found " << count << " devices" << endl;
 
-	uint newCount = 0;
+	uint32_t newCount = 0;
 
-	for(uint i=0;i<count;i++)
+	for(uint32_t i=0;i<count;i++)
 	{
-		rgbledctrl* rgbLed = new rgbledctrl();
+		rgbled* rgbLed = new rgbled();
 		if(rgbLed->open(i) && !rgbLeds->has(rgbLed))
 		{
 			newCount++;
@@ -41,7 +41,7 @@ uint deviceFinder::getNewDevices(rgbledCollection* rgbLeds)
 			rgbLeds->print(rgbLeds->size() - 1);
 		}
 		else
-			delete rgbLed;
+			delete rgbLed; // This also closes the device
 	}
 	
 	cout << "Added " << newCount << " new devices" << endl;
