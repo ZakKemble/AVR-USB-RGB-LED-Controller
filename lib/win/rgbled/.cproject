@@ -52,13 +52,14 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug.930201235" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug">
 								<option defaultValue="true" id="gnu.cpp.link.mingw.so.debug.option.shared.439382522" name="Shared (-shared)" superClass="gnu.cpp.link.mingw.so.debug.option.shared" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.libs.1063748456" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="usb"/>
+									<listOptionValue builtIn="false" value="setupapi"/>
+									<listOptionValue builtIn="false" value="rgbled"/>
 								</option>
 								<option id="gnu.cpp.link.option.userobjs.114864526" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Debug/src/resource.o}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.implname.1210081317" name="Import Library name (-Wl,--out-implib=)" superClass="gnu.cpp.link.option.implname" value="librgbledctrl.a" valueType="string"/>
-								<option id="gnu.cpp.link.option.flags.1066602912" superClass="gnu.cpp.link.option.flags" value="-static-libgcc -static-libstdc++" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1066602912" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static-libgcc -static-libstdc++" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1793216850" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -103,16 +104,18 @@
 								<option id="gnu.cpp.compiler.option.include.paths.916197883" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
 								</option>
+								<option id="gnu.cpp.compiler.option.other.pic.1878762042" name="Position Independent Code (-fPIC)" superClass="gnu.cpp.compiler.option.other.pic" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1901856269" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.mingw.so.release.1265249539" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.mingw.so.release">
-								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.mingw.so.release.option.optimization.level.1248941629" name="Optimization Level" superClass="gnu.c.compiler.mingw.so.release.option.optimization.level" valueType="enumerated"/>
+								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.mingw.so.release.option.optimization.level.1248941629" name="Optimization Level" superClass="gnu.c.compiler.mingw.so.release.option.optimization.level" value="gnu.c.optimization.level.most" valueType="enumerated"/>
 								<option id="gnu.c.compiler.mingw.so.release.option.debugging.level.1332545047" name="Debug Level" superClass="gnu.c.compiler.mingw.so.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.misc.other.670495612" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -std=c99 -fmessage-length=0 -Wstrict-prototypes" valueType="string"/>
 								<option id="gnu.c.compiler.option.warnings.extrawarn.843074667" name="Extra warnings (-Wextra)" superClass="gnu.c.compiler.option.warnings.extrawarn" value="true" valueType="boolean"/>
 								<option id="gnu.c.compiler.option.include.paths.1003450476" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
 								</option>
+								<option id="gnu.c.compiler.option.misc.pic.1920161965" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.369350432" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.so.release.1086473768" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.so.release">
@@ -121,13 +124,13 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.release.119230951" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.release">
 								<option defaultValue="true" id="gnu.cpp.link.mingw.so.release.option.shared.1794505643" name="Shared (-shared)" superClass="gnu.cpp.link.mingw.so.release.option.shared" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.libs.1970922459" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="usb"/>
+									<listOptionValue builtIn="false" value="setupapi"/>
 								</option>
 								<option id="gnu.cpp.link.option.strip.1985808464" name="Omit all symbol information (-s)" superClass="gnu.cpp.link.option.strip" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.userobjs.741185330" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Release/src/resource.o}&quot;"/>
 								</option>
-								<option id="gnu.cpp.link.option.implname.1037110484" name="Import Library name (-Wl,--out-implib=)" superClass="gnu.cpp.link.option.implname" value="librgbledctrl.a" valueType="string"/>
+								<option id="gnu.cpp.link.option.implname.1037110484" name="Import Library name (-Wl,--out-implib=)" superClass="gnu.cpp.link.option.implname" value="librgbled.a" valueType="string"/>
 								<option id="gnu.cpp.link.option.flags.989082062" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static-libgcc -static-libstdc++" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1965600356" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -168,4 +171,5 @@
 			<resource resourceType="PROJECT" workspacePath="/rgbledctrl"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

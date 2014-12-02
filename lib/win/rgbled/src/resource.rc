@@ -10,12 +10,12 @@
 
 #define APPNAME 		"RGB LED Control Lib"
 #define APPNAME_TERM	"RGB LED Control Lib\0"
-#define APPVERSION		1,1,0,0
-#define APPVERSION_STR	"1.1.0.0\0"
+#define APPVERSION		2,0,0,0
+#define APPVERSION_STR	"2.0.0.0\0"
 #define APPCOMPANY		"zakkemble.co.uk\0"
 #define APPCOPYRIGHT	"(c) Zak Kemble 2013\0"
 
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "rgbledctrl.dll.manifest"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "rgbled.dll.manifest"
 
 #define VER_FILEVERSION             APPVERSION
 #define VER_FILEVERSION_STR         APPVERSION_STR

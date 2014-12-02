@@ -9,7 +9,7 @@
 #ifndef EEPROM_H_
 #define EEPROM_H_
 /*
-#include "rgbledctrl.h"
+#include "rgbled.h"
 
 void eeprom_write(byte, eepAddr_t);
 byte eeprom_read(eepAddr_t);

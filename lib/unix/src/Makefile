@@ -1,8 +1,8 @@
 # Makefile for main library
 
 SOURCES= \
-	rgbledctrl.c \
-	rgbledctrl_cpp.cpp \
+	rgbled.c \
+	rgbled_cpp.cpp \
 	eeprom.c
 
 CFLAGS= \
@@ -14,7 +14,8 @@ CFLAGS= \
 	-O3 \
 	-std=c99 \
 	-fmessage-length=0 \
-	-fPIC
+	-fPIC \
+	-I/root/rgbled/
 
 CXXFLAGS= \
 	-c \
@@ -23,17 +24,18 @@ CXXFLAGS= \
 	-Wunused-result \
 	-O3 \
 	-fmessage-length=0 \
-	-fPIC
+	-fPIC \
+	-I/root/rgbled/
 
 LDFLAGS= \
 	-s \
 	-shared
 
 LDLIBS= \
-	-lusb
+	-lhidapi-hidraw
 
-EXECUTABLE=librgbledctrl.so
-ARCHIVE=librgbledctrl.a
+EXECUTABLE=librgbled.so
+ARCHIVE=librgbled.a
 
 CC=gcc
 CXX=g++

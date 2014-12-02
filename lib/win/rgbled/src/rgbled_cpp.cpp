@@ -6,13 +6,14 @@
  * Web: http://blog.zakkemble.co.uk/avr-usb-rgb-led-controller/
  */
 
-#ifdef _WIN32
-#include <lusb0_usb.h>
-#else
-#include <usb.h>
-#endif
 #include <string.h>
-#include <rgbledctrl.h>
+#include "rgbled.h"
+
+#ifdef _WIN32
+	#define LIB_EXPORT __declspec(dllexport)
+#else
+	#define LIB_EXPORT
+#endif
 
 // CPP wrapper
 
@@ -21,20 +22,28 @@
 // Static helper methods
 //
 
-void rgbledctrl::init()
+void LIB_EXPORT rgbled::init()
 {
-	rgbledctrl_init();
+	rgbled_init();
 }
 
-uint rgbledctrl::find()
+void LIB_EXPORT rgbled::exit()
 {
-	return rgbledctrl_find();
+	rgbled_exit();
 }
 
-bool rgbledctrl::sameDevice(usb_dev_handle* handle1, usb_dev_handle* handle2)
+uint32_t LIB_EXPORT rgbled::find()
 {
-	return rgbledctrl_sameDevice(handle1, handle2);
+	return rgbled_find();
 }
+
+bool LIB_EXPORT rgbled::sameDevice(rgbled* dev1, rgbled* dev2)
+{
+	return rgbled_sameDevice(dev1->getDevice(), dev2->getDevice());
+}
+
+
+
 
 
 
@@ -42,83 +51,83 @@ bool rgbledctrl::sameDevice(usb_dev_handle* handle1, usb_dev_handle* handle2)
 // Main class stuff
 //
 
-rgbledctrl::rgbledctrl()
+LIB_EXPORT rgbled::rgbled()
 {
 	device = NULL;
 }
 
-rgbledctrl::~rgbledctrl()
+LIB_EXPORT rgbled::~rgbled()
 {
 	close();
 }
 
-bool rgbledctrl::open()
+bool LIB_EXPORT rgbled::open()
 {
-	device = rgbledctrl_open();
+	device = rgbled_open();
 	return device != NULL;
 }
 
-bool rgbledctrl::open(uint idx)
+bool LIB_EXPORT rgbled::open(uint32_t idx)
 {
-	device = rgbledctrl_open_byIndex(idx);
+	device = rgbled_open_byIndex(idx);
 	return device != NULL;
 }
 
-bool rgbledctrl::open(byte value, eepAddr_t address)
+bool LIB_EXPORT rgbled::open(uint8_t value, eepAddr_t address)
 {
-	device = rgbledctrl_open_byEEPROM(value, address);
+	device = rgbled_open_byEEPROM(value, address);
 	return device != NULL;
 }
 
-void rgbledctrl::close()
+void LIB_EXPORT rgbled::close()
 {
-	rgbledctrl_close(device);
+	rgbled_close(device);
 	device = NULL;
 }
 
-bool rgbledctrl::poke()
+bool LIB_EXPORT rgbled::poke()
 {
-	return rgbledctrl_poke(device);
+	return rgbled_poke(device);
 }
 
-bool rgbledctrl::reset()
+bool LIB_EXPORT rgbled::reset()
 {
-	return rgbledctrl_reset(device);
+	return rgbled_reset(device);
 }
 
-bool rgbledctrl::setIdleTime(byte time)
+bool LIB_EXPORT rgbled::setIdleTime(uint8_t time)
 {
-	return rgbledctrl_setIdleTime(device, time);
+	return rgbled_setIdleTime(device, time);
 }
 
-bool rgbledctrl::setRGB(s_rgbVal& colour)
+bool LIB_EXPORT rgbled::setRGB(colour_t& colour)
 {
-	return rgbledctrl_setRGB(device, &colour);
+	return rgbled_setRGB(device, &colour);
 }
 
-bool rgbledctrl::setR(byte value)
+bool LIB_EXPORT rgbled::setR(uint8_t value)
 {
-	return rgbledctrl_setR(device, value);
+	return rgbled_setR(device, value);
 }
 
-bool rgbledctrl::setG(byte value)
+bool LIB_EXPORT rgbled::setG(uint8_t value)
 {
-	return rgbledctrl_setG(device, value);
+	return rgbled_setG(device, value);
 }
 
-bool rgbledctrl::setB(byte value)
+bool LIB_EXPORT rgbled::setB(uint8_t value)
 {
-	return rgbledctrl_setB(device, value);
+	return rgbled_setB(device, value);
 }
 
-bool rgbledctrl::eeprom_write(byte data, eepAddr_t address)
+bool LIB_EXPORT rgbled::eeprom_write(uint8_t data, eepAddr_t address)
 {
-	return rgbledctrl_eeprom_write(device, data, address);
+	return rgbled_eeprom_write(device, data, address);
 }
 
-bool rgbledctrl::eeprom_read(byte& data, eepAddr_t address)
+bool LIB_EXPORT rgbled::eeprom_read(uint8_t& data, eepAddr_t address)
 {
-	return rgbledctrl_eeprom_read(device, &data, address);
+	return rgbled_eeprom_read(device, &data, address);
 }
 
 
@@ -127,27 +136,34 @@ bool rgbledctrl::eeprom_read(byte& data, eepAddr_t address)
 // Getters
 //
 
-void rgbledctrl::getVersion(byte (&version)[2])
+void LIB_EXPORT rgbled::getVersion(rgbled_version_t& version)
 {
-	memcpy(&version, device->version, sizeof(version));
+	memcpy(&version, &device->version, sizeof(version));
 }
 
-eepAddr_t rgbledctrl::getEepromSize()
+eepAddr_t LIB_EXPORT rgbled::getEepromSize()
 {
 	return device->eepromSize;
 }
 
-void rgbledctrl::getColour(s_rgbVal& colour)
+void LIB_EXPORT rgbled::getColour(colour_t& colour)
 {
-	memcpy(&colour, &device->rgb, sizeof(s_rgbVal));
+	memcpy(&colour, &device->colour, sizeof(colour_t));
 }
 
-byte rgbledctrl::getIdleTime()
+uint8_t LIB_EXPORT rgbled::getIdleTime()
 {
 	return device->settings.idleTime;
 }
 
-usb_dev_handle* rgbledctrl::getHandle()
+void* LIB_EXPORT rgbled::getHandle()
 {
 	return device->handle;
+}
+
+// What about path?
+
+rgbled_t* LIB_EXPORT rgbled::getDevice()
+{
+	return device;
 }

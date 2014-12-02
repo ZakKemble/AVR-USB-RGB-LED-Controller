@@ -1,5 +1,5 @@
 Copy
-./lib/win/rgbledctrl/inc/*.h
-./lib/win/rgbledctrl/src/*.c
-./lib/win/rgbledctrl/src/*.cpp
+./lib/win/rgbled/inc/*.h
+./lib/win/rgbled/src/*.c
+./lib/win/rgbled/src/*.cpp
 to this directory.
