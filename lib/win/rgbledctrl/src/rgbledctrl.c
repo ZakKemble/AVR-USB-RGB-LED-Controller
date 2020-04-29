@@ -429,7 +429,7 @@ bool rgbledctrl_eeprom_read(s_rgbled_device* device, byte* data, eepAddr_t addre
 	}
 
 //	return eeprom_read(address);
-	return USBsend(device, USB_REQ_EEP_READ, 0, address, (char*)data, sizeof(data));
+	return USBsend(device, USB_REQ_EEP_READ, 0, address, (char*)data, 1);
 }
 /*
 // Clear all EEPROM data (doesn't send to MCU)
